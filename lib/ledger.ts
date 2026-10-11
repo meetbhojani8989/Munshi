@@ -178,13 +178,17 @@ export class LedgerService {
   }
 
   /** Sale: Dr Cash or Card Clearing / Cr Sales Revenue, and Dr Cost of Goods Sold / Cr Inventory at average cost. */
-  async recordSale(businessId: string | null | undefined, input: SaleInput): Promise<SaleResult> {
+  async recordSale(businessId: string | null | undefined, input: SaleInput, externalId?: string): Promise<SaleResult & { duplicate: boolean }> {
     const { lines, paymentMethod, channel } = saleInputSchema.parse(input);
     const qty = new Map<string, number>(); // the same item on two lines is one stock check
     for (const l of lines) qty.set(l.itemId, (qty.get(l.itemId) || 0) + l.qty);
     return this.change(businessId, (b, before) => {
+      // A sale that arrives with an id from outside (a POS payment) is posted once, however often it is delivered.
+      const posted = externalId && b.sales.find(s => s.id === externalId);
+      if (posted) return { sale: toSale(b, posted), changes: [], duplicate: true };
       const sale = sell(b, [...qty].map(([id, qty]) => ({ id, qty })), paymentMethod === 'cash' ? 'Cash' : 'Card', channel === 'counter' ? 'In store' : 'Online');
-      return { sale: toSale(b, sale), changes: cascade(before, b, [...qty.keys()]) };
+      if (externalId) { sale.id = externalId; b.entries[0].source = externalId; b.entries[0].memo = `Sale ${externalId}`; }
+      return { sale: toSale(b, sale), changes: cascade(before, b, [...qty.keys()]), duplicate: false };
     });
   }
 

@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "seed": "node --import tsx scripts/seed.ts",
+    "pos:simulate": "node --import tsx scripts/pos-simulate.ts",
     "test": "vitest run",
     "tauri": "tauri",
     "desktop:prepare": "node scripts/prepare-desktop.mjs",

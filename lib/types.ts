@@ -65,6 +65,43 @@ export const saleInputSchema = z.object({
 export const itemPatchSchema = z.object({
   price: z.number().positive(), name: z.string().trim().min(1), category: z.string().trim().min(1), reorderPoint: z.number().int().nonnegative(),
 }).partial().refine(p => Object.keys(p).length > 0, 'Nothing to update');
+/**
+ * POST /api/pos/webhook. A Square-style "payment.created" / "payment.updated" event. Square's payment events
+ * carry no line items, so the POS integration (or the simulator) includes the order next to the payment.
+ */
+const squareMoney = z.object({ amount: z.number().int().nonnegative(), currency: z.string().default('USD') }); // amount is in cents
+export const squarePaymentEventSchema = z.object({
+  merchant_id: z.string().optional(),
+  type: z.string(),
+  event_id: z.string().optional(),
+  created_at: z.string().optional(),
+  data: z.object({
+    type: z.string().optional(),
+    id: z.string().optional(),
+    object: z.object({
+      payment: z.object({
+        id: z.string().min(1),
+        status: z.string().default('COMPLETED'),
+        source_type: z.string().default('CARD'), // CARD, CASH, WALLET, ...
+        amount_money: squareMoney.optional(),
+        total_money: squareMoney.optional(),
+        order_id: z.string().optional(),
+        location_id: z.string().optional(),
+      }),
+      order: z.object({
+        id: z.string().optional(),
+        line_items: z.array(z.object({
+          uid: z.string().optional(),
+          name: z.string().default(''),
+          quantity: z.union([z.string(), z.number()]).default('1'), // Square sends quantities as strings
+          catalog_object_id: z.string().optional(), // matched against our item ids first, then the name
+          base_price_money: squareMoney.optional(),
+        })).min(1),
+      }),
+    }),
+  }),
+});
+export type SquarePaymentEvent = z.input<typeof squarePaymentEventSchema>;
 export type InvoiceInput = z.input<typeof invoiceInputSchema>;
 export type SaleInput = z.input<typeof saleInputSchema>;
 export type ItemPatch = z.input<typeof itemPatchSchema>;
@@ -75,6 +112,14 @@ export type ApiError = { error: string };
 export type InvoiceResult = { invoice: Invoice; changes: CascadeChange[] };
 /** POST /api/sales */
 export type SaleResult = { sale: Sale; changes: CascadeChange[] };
+
+/** POST /api/pos/webhook */
+export type PosWebhookResult =
+  | { ok: true; ignored: string } // an event we do not post, such as a payment that is not completed
+  | { ok: true; sale: Sale; changes: CascadeChange[];
+      duplicate: boolean;        // this payment was already posted; nothing changed
+      unmapped: string[];        // POS line items with no matching item here; they were left out of the sale
+      posTotal: Money | null };  // what the POS charged; differs from sale.total when prices are out of sync
 
 /** POST /api/invoices/parse: what OCR read from an uploaded invoice, for the owner to review and send to POST /api/invoices. */
 export type InvoiceDraft = {
