@@ -2,6 +2,7 @@
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { metrics } from "@/lib/core";
+import { findLeak } from "@/lib/ai/leak";
 import { useMunshi } from "@/components/MunshiProvider";
 import { Login } from "@/components/pages/Login";
 import { Dashboard } from "@/components/pages/Dashboard";
@@ -58,7 +59,8 @@ export default function App({
   const chartColors = dark
     ? ["#fb923c", "#facc15", "#fdba74", "#9a3412", "#fed7aa"]
     : ["#c2410c", "#ea580c", "#ca8a04", "#7c2d12", "#fdba74"];
-  const leak = 240 + (b.eventDay ? 125 : 0);
+  // Weekly revenue lost to an item that stops selling before close, computed from the sales history.
+  const leak = findLeak(b)?.perWeek ?? 0;
   return (
     <>
       {page === "dashboard" && (

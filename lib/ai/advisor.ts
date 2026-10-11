@@ -82,7 +82,7 @@ export class AdvisorService{
     ];
     let parsed;
     try{
-      const content=await this.client.complete(messages,{json:true});
+      const content=await this.client.complete(messages,{json:true,effort:'low'});
       parsed=rawSuggestionListSchema.parse(parseJson(content));
     }catch(e){
       // Never leave the owner with an empty screen: fall back to the deterministic advisor.

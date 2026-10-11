@@ -2,7 +2,7 @@
 // When any of them is unset it falls back to a deterministic mock so the app
 // runs with no env vars at all.
 export type ChatMessage={role:'system'|'user'|'assistant';content:string};
-export type ChatOptions={json?:boolean;temperature?:number;effort?:'low'|'medium'|'high'};
+export type ChatOptions={json?:boolean;temperature?:number;effort?:'low'|'medium'|'high';timeoutMs?:number};
 
 export interface LlmClient{
   readonly live:boolean;
@@ -22,6 +22,8 @@ class OpenAICompatibleClient implements LlmClient{
   async complete(messages:ChatMessage[],options:ChatOptions={},attempt=0):Promise<string>{
     const response=await fetch(`${this.config.baseUrl}/chat/completions`,{
       method:'POST',
+      // A slow model must never hang a request: callers fall back to deterministic logic.
+      signal:AbortSignal.timeout(options.timeoutMs??25000),
       headers:{'Content-Type':'application/json',Authorization:`Bearer ${this.config.apiKey}`},
       body:JSON.stringify({
         model:this.config.model,

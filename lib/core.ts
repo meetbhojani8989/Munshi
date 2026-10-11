@@ -29,7 +29,7 @@ const vendorFor=(category:string)=>category==='Drinks'?'Mountain Coffee':categor
 const cents=(n:number)=>Math.round(n*100)/100;
 // Hourly POS batches (one sale record per open hour, like a Z-report), so 90 days stay light enough to sync live.
 const openHours=[7,8,9,10,11,12,13,14,15,16,17,18,19,20,21];
-const hourWeight=[.55,1,.95,.6,.65,1.25,1.15,.6,.55,.6,.65,.7,.5,.35,.25];
+const hourWeight=[.55,1,.95,.6,.65,1.25,1.15,.6,.55,.6,.7,.8,.7,.6,.5]; // campus crowd studies late
 const weekdayWeight=[.9,.72,.82,.9,.98,1.14,1.32]; // Sun..Sat
 // Ninety days of history for two demo businesses. Every stock change has a matching journal entry, so the
 // Inventory account equals stock at cost and b.cash equals Cash plus Card Clearing. Lists are newest first.
@@ -69,8 +69,11 @@ export function seed():Business[]{
         if(at>now-60000)return; // never in the future
         const lines:{id:string;name:string;qty:number;price:number;cost:number}[]=[];
         items.forEach((i,j)=>{
-          const slot=rows[j][5],fit=slot==='am'?(hour<11?1.8:hour<14?.6:.25):slot==='mid'?(hour>=11&&hour<15?2:hour<11?.2:.7):1;
-          if(!retail&&i.name==='Tomato Soup'&&hour>=20)return; // soup is prepped to run out by 8 PM
+          const slot=rows[j][5];let fit=slot==='am'?(hour<11?1.8:hour<14?.6:.25):slot==='mid'?(hour>=11&&hour<15?2:hour<11?.2:.7):1;
+          if(!retail&&i.name==='Tomato Soup'){
+            if(hour>=20)return; // soup is prepped to run out by 8 PM...
+            if(hour>=16)fit=2.2; // ...right when it is a dinner favorite
+          }
           const qty=Math.min(Math.floor(daily[j]*dayFactor*hourWeight[h]*fit/9.5+rand()),i.stock);
           if(qty>0)lines.push({id:i.id,name:i.name,qty,price:i.price,cost:i.cost});
         });

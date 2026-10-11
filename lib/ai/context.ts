@@ -3,11 +3,12 @@
 import{metrics,type Business,type Suggestion as StoredSuggestion}from'../core';
 import{advisor}from'./advisor';
 import type{AnalyticsContext}from'./types';
+import{findLeak}from'./leak';
 
 const DAY=86400000;
 const cents=(n:number)=>Math.round(n*100)/100;
 
-export function contextFromBusiness(b:Business,periodDays=30):AnalyticsContext{
+export function contextFromBusiness(b:Business,periodDays=30,maxItems=25):AnalyticsContext{
   const since=new Date(Date.now()-periodDays*DAY).toISOString().slice(0,10);
   const recent=b.sales.filter(s=>s.date>=since);
   const units=new Map<string,number>();
@@ -25,11 +26,13 @@ export function contextFromBusiness(b:Business,periodDays=30):AnalyticsContext{
     eventDay:b.eventDay,
     items:b.items.map(i=>{
       const sold=units.get(i.id)||0;
-      // A selling item that is out of stock (or nearly) ran out before close: flag the last hour it sold.
-      const sellsOut=sold>0&&i.stock<=Math.max(2,i.reorder/3)&&lastHour.has(i.id);
+      // A steady seller that never sells in the last two open hours runs out before close (the Leak Finder),
+      // as does a selling item that is out of stock or nearly so.
+      const steady=sold/periodDays>=5,last=lastHour.get(i.id);
+      const sellsOut=last!==undefined&&((steady&&last<=19)||(sold>0&&i.stock<=Math.max(2,i.reorder/3)));
       return{id:i.id,name:i.name,category:i.category,price:cents(i.price),cost:cents(i.cost),unitsSold:sold,stock:i.stock,reorder:i.reorder,
-        ...(sellsOut?{sellsOutBy:`${String(lastHour.get(i.id)).padStart(2,'0')}:00`}:{})};
-    }),
+        ...(sellsOut?{sellsOutBy:`${String(last!+1).padStart(2,'0')}:00`}:{})};
+    }).sort((a,z)=>Number(!!z.sellsOutBy)-Number(!!a.sellsOutBy)||z.unitsSold-a.unitsSold).slice(0,maxItems),
   };
 }
 
@@ -37,12 +40,14 @@ const title=(s:string)=>s.charAt(0).toUpperCase()+s.slice(1);
 
 /** Ask the advisor for fresh suggestions from the live books. Keeps decided ones; replaces open ones. */
 export async function refreshSuggestions(b:Business):Promise<StoredSuggestion[]>{
-  const fresh=await advisor.suggest(contextFromBusiness(b));
+  const fresh=await advisor.suggest(contextFromBusiness(b,30,12)); // a smaller context keeps the model fast
   const decided=b.suggestions.filter(s=>s.status);
+  const leak=findLeak(b);
   const next:StoredSuggestion[]=fresh.map(s=>({
     id:s.id,action:s.action,reason:s.reason,
     // The Insights page shows monthly dollars; weekly leaks are scaled to a month.
-    impact:Math.round(s.impact.amount*(s.impact.period==='week'?4.33:1)), // a fixed leak is money recovered
+    // A fixed leak is money recovered; the hours fix for the leaking item uses the Leak Finder's measured figure.
+    impact:s.category==='hours'&&leak&&s.itemId===leak.itemId?Math.round(leak.perWeek*4.33):Math.round(s.impact.amount*(s.impact.period==='week'?4.33:1)),
     confidence:Math.round(s.confidence*100),category:title(s.category),itemId:s.itemId,newPrice:s.newPrice,
   }));
   b.suggestions=[...next,...decided];

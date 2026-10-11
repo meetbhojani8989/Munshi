@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Business } from "@/lib/core";
+import { findLeak } from "@/lib/ai/leak";
 import { Title, Card, usd, money } from "@/components/layout/ui";
 
 export function Insights({
@@ -13,7 +14,9 @@ export function Insights({
 }) {
   const suggestions = b.suggestions.filter((s) => !s.status);
   const [thinking, setThinking] = useState(false);
-  const soup = b.items.find((i) => /soup/i.test(i.name)) ?? b.items[10];
+  const found = findLeak(b);
+  const soup = b.items.find((i) => i.id === found?.itemId) ?? b.items.find((i) => /soup/i.test(i.name)) ?? b.items[10];
+  const stops = found ? `${found.stopsAt > 12 ? found.stopsAt - 12 : found.stopsAt} PM` : "8 PM";
   async function refresh() {
     setThinking(true);
     await act("insights", {}, "Munshi re-read your books and wrote fresh advice.");
@@ -37,7 +40,7 @@ export function Insights({
         </div>
         <h2 className="mt-2">{usd(leak)} a week is slipping away</h2>
         <p className="mt-2 text-sm">
-          {soup.name} stops selling around 8 PM, but you stay open until 10 PM.
+          {soup.name} stops selling around {stops}, but you stay open until 10 PM.
           Evening guests who want it walk out, and three slow items tie up stock
           on the shelf. Review the fixes below.
         </p>
