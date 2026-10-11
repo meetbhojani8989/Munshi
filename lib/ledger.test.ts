@@ -45,7 +45,8 @@ describe('LedgerService', () => {
     expect(changes[0]).toMatchObject({ before: item.stock, after: item.stock + 10 });
     expect(changes[1].before!).toBeCloseTo(ap, 2);
     expect(changes[1].after!).toBeCloseTo(ap + 31.5, 2);
-    expect(changes[4].after!).toBeLessThan(changes[4].before!); // cost went up, margin went down
+    // Buying above the average cost lowers the margin; buying below it raises the margin.
+    expect(Math.sign(changes[4].after! - changes[4].before!)).toBe(3 > item.cost ? -1 : 1);
   });
 
   it('matches invoice lines by name and adds products it has not seen', async () => {
