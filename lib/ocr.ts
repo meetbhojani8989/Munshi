@@ -75,6 +75,8 @@ export function parseInvoiceText(text: string): Draft {
   return { vendor, date: findDate(text) ?? today(), lines, tax: cents(tax), total: cents(totalLine ? lastMoney(totalLine) : subtotal + tax), source: 'ocr', warnings };
 }
 
+const awsRegion = () => process.env.MUNSHI_AWS_REGION || process.env.AWS_REGION;
+
 /** Maps an AWS Textract AnalyzeExpense document to a draft. */
 export function parseTextractExpense(doc: ExpenseDocument | undefined): Draft {
   const summary = (...types: string[]) => doc?.SummaryFields?.find(f => types.includes(f.Type?.Text ?? ''))?.ValueDetection?.Text;
@@ -100,7 +102,10 @@ export const sampleInvoice = (): Draft => ({
 
 async function textract(bytes: Uint8Array): Promise<Draft> {
   const { TextractClient, AnalyzeExpenseCommand } = await import('@aws-sdk/client-textract');
-  const result = await new TextractClient({ region: process.env.AWS_REGION }).send(new AnalyzeExpenseCommand({ Document: { Bytes: bytes } }));
+  // Amplify reserves the AWS_ prefix, so MUNSHI_AWS_* can carry the same credentials there.
+  const accessKeyId = process.env.MUNSHI_AWS_ACCESS_KEY_ID, secretAccessKey = process.env.MUNSHI_AWS_SECRET_ACCESS_KEY;
+  const credentials = accessKeyId && secretAccessKey ? { accessKeyId, secretAccessKey } : undefined;
+  const result = await new TextractClient({ region: awsRegion(), credentials }).send(new AnalyzeExpenseCommand({ Document: { Bytes: bytes } }));
   return parseTextractExpense(result.ExpenseDocuments?.[0]);
 }
 
@@ -133,7 +138,7 @@ export async function parseInvoiceFile(bytes: Uint8Array): Promise<Draft> {
   if (!bytes.length) return sampleInvoice();
   if (bytes.length > 10 * 1024 * 1024) throw new OcrError('That file is over 10 MB. Upload a smaller photo.');
   let cloudFailed = false;
-  if (process.env.AWS_REGION) {
+  if (awsRegion()) {
     try { return await textract(bytes); } catch (e) { console.error('Textract failed, using on-device OCR', e); cloudFailed = true; }
   }
   if (isPdf(bytes)) throw new OcrError(cloudFailed ? 'AWS Textract could not read that PDF. Upload a photo or screenshot instead.' : 'PDFs need AWS Textract, which is not configured. Upload a photo or screenshot of the invoice instead.');
