@@ -2,6 +2,7 @@
 import{useEffect,useState}from'react';
 import type{Suggestion,Impact}from'@/lib/ai/types';
 import{Card,Title,usd}from'./ui';
+import PayButton from'./PayButton';
 
 function impactLabel(i:Impact){
   const sign=i.direction==='loss'?'-':'+';
@@ -80,5 +81,6 @@ export default function InsightsView(){
       ):<Card><h2>You’re all caught up</h2><p className="muted mt-2">New recommendations will appear as fresh sales arrive.</p></Card>}
     </div>
     {Object.keys(approved).length>0&&<p className="muted text-sm mt-5">✓ {Object.keys(approved).length} suggestion(s) approved. Munshi will check the outcome and grade itself on the Scorecard.</p>}
+    <PayButton/>
   </>;
 }
