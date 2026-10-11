@@ -4,7 +4,9 @@ export type Item={id:string;name:string;category:string;price:number;cost:number
 export type Sale={id:string;date:string;time?:string;items:{id:string;name:string;qty:number;price:number;cost:number}[];total:number;channel:string;payment:string};
 export type Invoice={id:string;date:string;vendor:string;items:{id:string;name:string;qty:number;cost:number}[];tax?:number;total:number;paid:boolean};
 export type Suggestion={id:string;action:string;reason:string;impact:number;confidence:number;category:string;itemId?:string;newPrice?:number;status?:string};
-export type Business={id:string;name:string;type:string;eventDay:boolean;cash:number;items:Item[];sales:Sale[];invoices:Invoice[];entries:Entry[];suggestions:Suggestion[];orders:{id:string;channel:string;customer:string;itemId:string;qty:number;status:string}[];experiments:{id:string;itemId:string;price:number;days:number;start:string;status:string}[];outcomes:{id:string;predicted:number;actual:number;lesson:string;action?:string;category?:string}[];arena?:import('./ai/arena').ArenaState};
+export type Business={id:string;name:string;type:string;eventDay:boolean;cash:number;items:Item[];sales:Sale[];invoices:Invoice[];entries:Entry[];suggestions:Suggestion[];orders:{id:string;channel:string;customer:string;itemId:string;qty:number;status:string}[];experiments:{id:string;itemId:string;price:number;days:number;start:string;status:string}[];outcomes:{id:string;predicted:number;actual:number;lesson:string;action?:string;category?:string}[];staff?:Staff[];payruns?:PayRun[];arena?:import('./ai/arena').ArenaState};
+export type Staff={id:string;name:string;role:string;rate:number;hours:number};
+export type PayRun={id:string;date:string;total:number;lines:{name:string;hours:number;pay:number}[]};
 const today=()=>new Date().toISOString().slice(0,10);
 export function post(b:Business,memo:string,source:string,lines:Line[]){const debit=lines.reduce((s,l)=>s+l.debit,0),credit=lines.reduce((s,l)=>s+l.credit,0);if(Math.abs(debit-credit)>.001)throw Error('Unbalanced entry');b.entries.unshift({id:crypto.randomUUID(),date:today(),memo,source,lines});}
 export function sell(b:Business,ids:{id:string;qty:number}[],payment='Card',channel='In store'){const items=ids.map(x=>{const i=b.items.find(i=>i.id===x.id);if(!i)throw Error('Item not found');if(x.qty<1||x.qty>i.stock)throw Error('Insufficient stock');return{id:i.id,name:i.name,qty:x.qty,price:i.price,cost:i.cost}});const total=items.reduce((s,i)=>s+i.qty*i.price,0),cogs=items.reduce((s,i)=>s+i.qty*i.cost,0);items.forEach(x=>{const i=b.items.find(i=>i.id===x.id)!;i.stock-=x.qty;i.units+=x.qty});b.cash+=total;const sale={id:crypto.randomUUID(),date:today(),time:new Date().toISOString(),items,total,channel,payment};b.sales.unshift(sale);post(b,`Sale ${sale.id.slice(0,6)}`,sale.id,[{account:payment==='Cash'?'Cash':'Card Clearing',debit:total,credit:0},{account:'Sales Revenue',debit:0,credit:total},{account:'Cost of Goods Sold',debit:cogs,credit:0},{account:'Inventory',debit:0,credit:cogs}]);return sale}
@@ -42,7 +44,7 @@ export function seed():Business[]{
     const items:Item[]=rows.map(([n,category,price,cost],j)=>({id:`${id}-${j}`,name:n,category,price,cost,stock:0,reorder:12,units:0}));
     const daily=rows.map(r=>r[4]*scale*1.3); // expected units per day per item
     items.forEach((i,j)=>{i.stock=Math.round(daily[j]*6)+10;i.reorder=Math.max(8,Math.round(daily[j]*2))});
-    const b:Business={id,name,type,eventDay:false,cash:12400,items,sales:[],invoices:[],entries:[],suggestions:[],orders:[],experiments:[],outcomes:[]};
+    const b:Business={id,name,type,eventDay:false,cash:12400,items,sales:[],invoices:[],entries:[],suggestions:[],orders:[],experiments:[],outcomes:[],staff:sampleStaff(),payruns:[]};
     const journal=(id:string,date:string,memo:string,source:string,lines:Line[])=>b.entries.unshift({id,date,memo,source,lines});
     const opening=cents(items.reduce((s,i)=>s+i.stock*i.cost,0));
     journal(`j-${id}-open`,dayAgo(90),'Opening balance','opening',[{account:'Cash',debit:12400,credit:0},{account:'Inventory',debit:opening,credit:0},{account:'Owner Equity',debit:0,credit:12400+opening}]);
@@ -104,3 +106,8 @@ export function seed():Business[]{
   return[make('cafe','Nittany Bean & Wrap','Café',1),make('retail','Hearth & Pine Market','Retail shop',.3)];
 }
 
+// ─── Payroll ───────────────────────────────────────────────────────────────
+// Gross pay only (rate × hours for the period). Taxes and deductions are not
+// calculated. A pay run posts Wages Expense against Cash.
+export function sampleStaff():Staff[]{return[{id:'st1',name:'Priya Shah',role:'Manager',rate:24,hours:40},{id:'st2',name:'Marcus Lee',role:'Barista',rate:16.5,hours:32},{id:'st3',name:'Elena Rossi',role:'Line cook',rate:18,hours:36},{id:'st4',name:'Sam Carter',role:'Counter',rate:15,hours:20}]}
+export function runPayroll(b:Business){const lines=(b.staff||[]).filter(x=>x.hours>0&&x.rate>0).map(x=>({name:x.name,hours:x.hours,pay:Math.round(x.rate*x.hours*100)/100}));const total=Math.round(lines.reduce((s,l)=>s+l.pay,0)*100)/100;if(!lines.length)throw Error('No hours to pay');if(total>b.cash)throw Error('Not enough cash to cover this pay run');const run={id:crypto.randomUUID(),date:today(),total,lines};b.cash-=total;(b.payruns||=[]).unshift(run);post(b,`Payroll for ${lines.length} staff`,run.id,[{account:'Wages Expense',debit:total,credit:0},{account:'Cash',debit:0,credit:total}]);return run}

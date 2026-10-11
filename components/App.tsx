@@ -4,10 +4,10 @@ import { motion } from "framer-motion";
 import { metrics } from "@/lib/core";
 import { findLeak } from "@/lib/ai/leak";
 import { useMunshi } from "@/components/MunshiProvider";
+import { useChartColors } from "@/components/layout/ui";
 import { Login } from "@/components/pages/Login";
 import { Dashboard } from "@/components/pages/Dashboard";
 import { Sales } from "@/components/pages/Sales";
-import { Scan } from "@/components/pages/Scan";
 import { Inventory } from "@/components/pages/Inventory";
 import { Books } from "@/components/pages/Books";
 import { Analytics } from "@/components/pages/Analytics";
@@ -19,6 +19,7 @@ import { Orders } from "@/components/pages/Orders";
 import { Vendors } from "@/components/pages/Vendors";
 import { Assistant } from "@/components/pages/Assistant";
 import { Valuation } from "@/components/pages/Valuation";
+import { Payroll } from "@/components/pages/Payroll";
 import { SettingsPage } from "@/components/pages/Settings";
 import { Onboarding } from "@/components/pages/Onboarding";
 
@@ -33,6 +34,7 @@ export default function App({
 }) {
   const router = useRouter();
   const { b, ready, act, live, login, dark, setDark } = useMunshi();
+  const chartColors = useChartColors().series;
   if (page === "login") return <Login login={login} />;
   if (!ready || !b) return <Loading />;
   const m = metrics(b);
@@ -56,9 +58,6 @@ export default function App({
       ),
     };
   });
-  const chartColors = dark
-    ? ["#fb923c", "#facc15", "#fdba74", "#9a3412", "#fed7aa"]
-    : ["#c2410c", "#ea580c", "#ca8a04", "#7c2d12", "#fdba74"];
   // Weekly revenue lost to an item that stops selling before close, computed from the sales history.
   const leak = findLeak(b)?.perWeek ?? 0;
   return (
@@ -67,8 +66,8 @@ export default function App({
         <Dashboard b={b} m={m} leak={leak} act={act} data={dSales} live={live} />
       )}
       {page === "sales" && <Sales b={b} act={act} />}
-      {page === "scan" && <Scan b={b} act={act} />}
-      {page === "inventory" && <Inventory b={b} m={m} event={b.eventDay} />}
+      {page === "scan" && <Inventory b={b} m={m} event={b.eventDay} act={act} />}
+      {page === "inventory" && <Inventory b={b} m={m} event={b.eventDay} act={act} />}
       {page === "books" && <Books b={b} act={act} />}
       {page === "analytics" && (
         <Analytics b={b} data={dSales} colors={chartColors} />
@@ -87,6 +86,7 @@ export default function App({
       {page === "vendors" && <Vendors b={b} act={act} />}
       {page === "assistant" && <Assistant b={b} act={act} />}
       {page === "valuation" && <Valuation b={b} m={m} />}
+      {page === "payroll" && <Payroll b={b} act={act} />}
       {page === "settings" && (
         <SettingsPage b={b} act={act} dark={dark} setDark={setDark} />
       )}
@@ -107,7 +107,7 @@ function Loading() {
         {[0, 1, 2, 3].map((i) => (
           <motion.div
             key={i}
-            className="h-32 rounded-[18px] bg-surface-2"
+            className="h-32 rounded-[var(--r)] bg-surface-2"
             animate={{ opacity: [0.5, 1, 0.5] }}
             transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.12 }}
           />

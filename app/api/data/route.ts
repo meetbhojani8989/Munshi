@@ -1,7 +1,7 @@
 import{auth}from'@/auth';
 import{NextRequest,NextResponse}from'next/server';
 import{z,ZodError}from'zod';
-import{sell,receive,pay,type Business}from'@/lib/core';
+import{sell,receive,pay,runPayroll,type Business}from'@/lib/core';
 import{findOrCreateItem}from'@/lib/ledger';
 import{getStore}from'@/lib/store';
 import{refreshSuggestions}from'@/lib/ai/context';
@@ -41,6 +41,8 @@ export async function POST(req:NextRequest){
     else if(action==='experiment')b.experiments.push({id:crypto.randomUUID(),itemId:z.string().parse(p.itemId),price:z.number().positive().parse(p.price),days:z.number().int().positive().parse(p.days),start:new Date().toISOString(),status:'Active'});
     else if(action==='order'){const o=b.orders.find(x=>x.id===p.id);if(o){o.status=p.status;if(p.status==='Done')result=sell(b,[{id:o.itemId,qty:o.qty}],'Card',o.channel)}}
     else if(action==='business'){b.name=z.string().min(1).parse(p.name)}
+    else if(action==='staff'){b.staff=z.array(z.object({id:z.string(),name:z.string().min(1),role:z.string(),rate:z.number().nonnegative(),hours:z.number().nonnegative()})).parse(p.staff)}
+    else if(action==='payroll'){result=runPayroll(b)}
     else throw Error('Unknown action');
     await store.save(b);
     return NextResponse.json({businesses:(await store.list()).map(forClient),result});

@@ -4,77 +4,96 @@
 
 @layer base {
   /* ─── Tokens ─────────────────────────────────────────────────────────────
-   Light = white canvas, dark = pure black. Saffron is the brand (appetizing
-   orange, UI Pro Max food palette), warm gold is the secondary, espresso is
-   the deep panel colour. Green stays only as the semantic "money up". */
+   The canvas is plain white or plain black. One accent hue (--h), picked on
+   the colour wheel in Settings → Personalize, colours every interactive and
+   highlighted element as a solid — no gradients. */
   :root {
+    --h: 262;
+    --r: 24px;
+    --r-sm: 14px;
+    --pad: 24px;
+    --gap: 16px;
+
     --bg: #ffffff;
-    --surface: #ffffff;
-    --surface-2: #faf7f4;
-    --surface-3: #f1ebe4;
-    --ink: #1c1410;
-    --ink-2: #3d322b;
-    --muted: #6b5d53;
-    --line: #efe8e1;
-    --line-strong: #ddd2c7;
-    --brand: #c2410c;
+    --surface: oklch(0.972 0 0);
+    --surface-2: oklch(0.95 0 0);
+    --surface-3: oklch(0.905 0 0);
+    --glass: color-mix(in srgb, var(--bg) 80%, transparent);
+    --glass-strong: color-mix(in srgb, var(--bg) 94%, transparent);
+    --ink: oklch(0.18 0 0);
+    --ink-2: oklch(0.3 0 0);
+    --muted: oklch(0.47 0 0);
+    --line: oklch(0 0 0 / 0.08);
+    --line-strong: oklch(0 0 0 / 0.17);
+    --brand: oklch(0.55 0.21 var(--h));
+    --brand-2: var(--brand);
+    --brand-3: var(--brand);
+    --chart-2: oklch(0.74 0.12 calc(var(--h) + 150));
+    --chart-3: oklch(0.8 0.1 calc(var(--h) - 110));
     --on-brand: #ffffff;
-    --accent: #ea580c;
+    --accent: var(--brand);
     --on-accent: #ffffff;
-    --accent-text: #c2410c;
-    --accent-soft: #fff1e7;
-    --gold: #a16207;
-    --gold-soft: #fdf6e3;
-    --hero: #1c120c;
-    --hero-ink: #fff7ed;
-    --pos: #15803d;
-    --neg: #d92d3a;
-    --warn: #b45309;
-    --pos-soft: #ebf8ef;
-    --neg-soft: #fdecee;
-    --warn-soft: #fff4e5;
-    --shadow: 0 1px 2px rgba(28, 20, 16, 0.04),
-      0 12px 32px -12px rgba(28, 20, 16, 0.14);
-    --shadow-lg: 0 2px 4px rgba(28, 20, 16, 0.04),
-      0 30px 60px -20px rgba(194, 65, 12, 0.28);
-    --glow: 0 0 0 1px rgba(234, 88, 12, 0.18), 0 18px 50px -18px rgba(234, 88, 12, 0.45);
+    --accent-text: oklch(0.47 0.2 var(--h));
+    --accent-soft: oklch(0.945 0.04 var(--h));
+    --gold: var(--accent-text);
+    --gold-soft: var(--accent-soft);
+    --hl: #ffffff;
+    --hl-ink: oklch(0.3 0.12 var(--h));
+    --hero: oklch(0.5 0.21 var(--h));
+    --hero-2: oklch(0.43 0.19 var(--h));
+    --hero-ink: #ffffff;
+    --pos: oklch(0.5 0.14 155);
+    --neg: oklch(0.55 0.21 22);
+    --warn: oklch(0.55 0.14 65);
+    --pos-soft: oklch(0.95 0.045 155);
+    --neg-soft: oklch(0.95 0.035 22);
+    --warn-soft: oklch(0.95 0.05 80);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 10px 28px -14px rgba(0, 0, 0, 0.16);
+    --shadow-lg: 0 2px 4px rgba(0, 0, 0, 0.05), 0 30px 60px -24px rgba(0, 0, 0, 0.3);
+    --glow: 0 0 0 1px var(--brand), 0 16px 40px -18px var(--brand);
+    --sheen: 0 0 0 0 transparent;
     color-scheme: light;
   }
   html.dark {
     --bg: #000000;
-    --surface: #0c0a09;
-    --surface-2: #14110f;
-    --surface-3: #1f1a17;
-    --ink: #faf5f0;
-    --ink-2: #d8cdc4;
-    --muted: #a39588;
-    --line: #221c18;
-    --line-strong: #362c25;
-    --brand: #fb923c;
-    --on-brand: #1c0a00;
-    --accent: #f97316;
-    --on-accent: #1c0a00;
-    --accent-text: #fdba74;
-    --accent-soft: #2a1406;
-    --gold: #facc15;
-    --gold-soft: #2a2205;
-    --hero: #170d07;
-    --hero-ink: #fff7ed;
-    --pos: #4ade80;
-    --neg: #ff6b74;
-    --warn: #fbbf24;
-    --pos-soft: #0a2414;
-    --neg-soft: #2a0e11;
-    --warn-soft: #2a1c05;
-    --shadow: 0 1px 0 rgba(255, 255, 255, 0.03),
-      0 12px 32px -12px rgba(0, 0, 0, 0.8);
-    --shadow-lg: 0 30px 60px -20px rgba(0, 0, 0, 0.9);
-    --glow: 0 0 0 1px rgba(249, 115, 22, 0.25), 0 18px 50px -18px rgba(249, 115, 22, 0.5);
+    --surface: oklch(0.17 0 0);
+    --surface-2: oklch(0.215 0 0);
+    --surface-3: oklch(0.28 0 0);
+    --ink: oklch(0.97 0 0);
+    --ink-2: oklch(0.86 0 0);
+    --muted: oklch(0.7 0 0);
+    --line: oklch(1 0 0 / 0.1);
+    --line-strong: oklch(1 0 0 / 0.22);
+    --brand: oklch(0.74 0.16 var(--h));
+    --on-brand: oklch(0.16 0.05 var(--h));
+    --on-accent: oklch(0.16 0.05 var(--h));
+    --accent-text: oklch(0.82 0.12 var(--h));
+    --accent-soft: oklch(0.27 0.07 var(--h));
+    --pos: oklch(0.8 0.17 155);
+    --neg: oklch(0.74 0.17 22);
+    --warn: oklch(0.83 0.15 80);
+    --pos-soft: oklch(0.27 0.06 155);
+    --neg-soft: oklch(0.27 0.07 22);
+    --warn-soft: oklch(0.28 0.05 80);
+    --shadow: 0 10px 28px -14px rgba(0, 0, 0, 0.8);
+    --shadow-lg: 0 30px 60px -24px rgba(0, 0, 0, 0.95);
     color-scheme: dark;
+  }
+  html[data-radius="sharp"] {
+    --r: 12px;
+    --r-sm: 8px;
+  }
+  html[data-radius="round"] {
+    --r: 34px;
+    --r-sm: 20px;
+  }
+  html[data-density="compact"] {
+    --pad: 16px;
+    --gap: 10px;
   }
 
   html {
-    scroll-padding-top: 88px;
+    scroll-padding-top: 96px;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
@@ -82,15 +101,17 @@
     background: var(--bg);
     color: var(--ink);
     font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
   }
   ::selection {
-    background: var(--accent);
-    color: var(--on-accent);
+    background: var(--brand);
+    color: var(--on-brand);
   }
   :focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--brand);
     outline-offset: 2px;
-    border-radius: 8px;
+    border-radius: 10px;
   }
   button,
   a,
@@ -111,38 +132,44 @@
     font-family: var(--font-display), var(--font-sans), sans-serif;
   }
   h1 {
-    font-size: clamp(32px, 4vw, 52px);
-    line-height: 1.08;
+    font-size: clamp(34px, 4.6vw, 64px);
+    line-height: 1;
     font-weight: 700;
-    letter-spacing: -0.03em;
+    letter-spacing: -0.045em;
+    text-wrap: balance;
   }
   h2 {
-    font-size: 17px;
-    font-weight: 650;
-    letter-spacing: -0.015em;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.025em;
   }
-  /* Highlighted word in a heading: brand green, same face. */
+  /* Emphasis word in a heading: italic serif painted with the accent field. */
   .serif {
+    font-family: var(--font-serif), Georgia, serif;
+    font-style: italic;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    padding-right: 0.08em;
     color: var(--accent-text);
   }
   .mono {
     font-family: var(--font-mono), ui-monospace, monospace;
-    font-size: 0.95em;
+    font-size: 0.93em;
   }
   .num {
     font-variant-numeric: tabular-nums;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
   }
   .eyebrow {
     font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.01em;
+    font-weight: 700;
+    letter-spacing: 0.02em;
     color: var(--muted);
   }
 }
 
 @layer components {
-  /* ─── Semantic colour helpers (kept for every page) ───────────────────── */
+  /* ─── Semantic colour helpers ─────────────────────────────────────────── */
   .muted {
     color: var(--muted);
   }
@@ -161,31 +188,30 @@
     position: relative;
     background: var(--surface);
     border: 1px solid var(--line);
-    border-radius: 16px;
-    padding: 22px;
-    box-shadow: 0 1px 2px rgba(11, 20, 17, 0.03);
+    border-radius: var(--r);
+    padding: var(--pad);
     transition:
       border-color 0.25s ease,
       box-shadow 0.35s ease,
-      transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+      transform 0.45s cubic-bezier(0.2, 0.9, 0.2, 1);
   }
   .card.lift:hover {
-    border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
-    box-shadow: var(--shadow);
-    transform: translateY(-3px);
+    border-color: var(--brand);
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-4px);
   }
-  /* Deep-green hero panel (morning brief, payment summary, cascade toast). */
+  /* Colour panel: the accent itself as a surface (pulse, payment, toast). */
   .card-ink {
-    background:
-      radial-gradient(90% 120% at 100% 0%, rgba(234, 88, 12, 0.38), transparent 55%),
-      radial-gradient(60% 80% at 0% 100%, rgba(202, 138, 4, 0.18), transparent 60%),
-      var(--hero);
+    background: var(--hero);
     color: var(--hero-ink);
-    border-color: #3a2416;
+    border-color: transparent;
   }
   .card-ink .muted,
   .card-ink .eyebrow {
-    color: color-mix(in srgb, var(--hero-ink) 65%, transparent);
+    color: rgba(255, 255, 255, 0.72);
+  }
+  .card-ink :focus-visible {
+    outline-color: #fff;
   }
 
   /* ─── Buttons ────────────────────────────────────────────────────────── */
@@ -196,81 +222,86 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    min-height: 40px;
-    padding: 0 16px;
-    border-radius: 12px;
-    font-weight: 600;
+    min-height: 44px;
+    padding: 0 20px;
+    border-radius: 999px;
+    font-weight: 700;
     font-size: 14px;
+    letter-spacing: -0.01em;
     transition:
-      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      transform 0.25s cubic-bezier(0.2, 0.9, 0.2, 1),
       background 0.2s ease,
       border-color 0.2s ease,
       color 0.2s ease,
-      box-shadow 0.2s ease;
+      box-shadow 0.25s ease;
     user-select: none;
   }
   .btn:active:not(:disabled),
   .btn2:active:not(:disabled),
   .btn-accent:active:not(:disabled) {
-    transform: scale(0.97);
+    transform: scale(0.96);
   }
-  .btn {
+  .btn,
+  .btn-accent {
     background: var(--brand);
     color: var(--on-brand);
-    box-shadow:
-      0 1px 2px rgba(4, 61, 46, 0.2),
-      inset 0 1px 0 rgba(255, 255, 255, 0.12);
   }
-  .btn:hover:not(:disabled) {
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent);
+  .btn:hover:not(:disabled),
+  .btn-accent:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 26px -12px var(--brand);
   }
   .btn2 {
-    background: var(--surface);
+    background: var(--bg);
     color: var(--ink);
     border: 1px solid var(--line-strong);
   }
   .btn2:hover:not(:disabled) {
-    border-color: var(--accent);
+    border-color: var(--brand);
     color: var(--accent-text);
   }
-  .btn-accent {
-    background: var(--accent);
-    color: var(--on-accent);
-  }
   .card-ink .btn-accent {
-    background: #fb923c;
-    color: #1c0a00;
+    background: #fff;
+    color: var(--hl-ink);
+    box-shadow: 0 10px 26px -12px rgba(0, 0, 0, 0.5);
   }
-  .btn-accent:hover:not(:disabled) {
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 35%, transparent);
+  .card-ink .btn2 {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.25);
+    color: #fff;
   }
 
   /* ─── Inputs ─────────────────────────────────────────────────────────── */
   input,
   select,
   textarea {
-    background: var(--surface);
+    background: var(--bg);
     border: 1px solid var(--line-strong);
-    border-radius: 12px;
-    padding: 9px 12px;
+    border-radius: var(--r-sm);
+    padding: 10px 14px;
     color: var(--ink);
     font-size: 14px;
     transition:
       border-color 0.2s ease,
       box-shadow 0.2s ease;
   }
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--muted);
+  }
   input:focus,
   select:focus,
   textarea:focus {
     outline: none;
-    border-color: var(--accent);
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent);
+    border-color: var(--brand);
+    box-shadow: 0 0 0 4px color-mix(in oklch, var(--brand) 20%, transparent);
   }
   input[type="range"] {
     accent-color: var(--brand);
     padding: 0;
     border: 0;
     box-shadow: none;
+    background: none;
   }
   input[type="checkbox"] {
     accent-color: var(--brand);
@@ -282,36 +313,32 @@
     align-items: center;
     gap: 6px;
     border-radius: 999px;
-    padding: 3px 10px;
+    padding: 4px 11px;
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 600;
     background: var(--surface-2);
     color: var(--ink-2);
-    border: 1px solid var(--line);
   }
   .tag-accent {
     background: var(--accent-soft);
     color: var(--accent-text);
-    border-color: transparent;
   }
-  .card-ink .tag-accent {
-    background: color-mix(in srgb, #fb923c 22%, transparent);
-    color: #fed7aa;
+  .card-ink .tag-accent,
+  .card-ink .tag {
+    background: rgba(255, 255, 255, 0.16);
+    color: #fff;
   }
   .tag-pos {
     background: var(--pos-soft);
     color: var(--pos);
-    border-color: transparent;
   }
   .tag-neg {
     background: var(--neg-soft);
     color: var(--neg);
-    border-color: transparent;
   }
   .tag-warn {
     background: var(--warn-soft);
     color: var(--warn);
-    border-color: transparent;
   }
 
   /* ─── Tables ─────────────────────────────────────────────────────────── */
@@ -320,97 +347,64 @@
   }
   .table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0 4px;
     min-width: 540px;
     font-size: 14px;
   }
   .table th {
     text-align: left;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--muted);
     font-size: 12px;
-    background: var(--surface-2);
-  }
-  .table th:first-child {
-    border-top-left-radius: 10px;
-    border-bottom-left-radius: 10px;
-  }
-  .table th:last-child {
-    border-top-right-radius: 10px;
-    border-bottom-right-radius: 10px;
   }
   .table td,
   .table th {
-    padding: 12px;
+    padding: 11px 14px;
   }
   .table td {
-    border-bottom: 1px solid var(--line);
-  }
-  .table tbody tr {
+    background: var(--bg);
     transition: background 0.15s ease;
   }
-  .table tbody tr:hover {
-    background: color-mix(in srgb, var(--accent-soft) 60%, transparent);
+  .table td:first-child {
+    border-radius: var(--r-sm) 0 0 var(--r-sm);
+  }
+  .table td:last-child {
+    border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  }
+  .table tbody tr:hover td {
+    background: var(--accent-soft);
   }
 
   /* ─── Grids ──────────────────────────────────────────────────────────── */
-  /* Grid children may shrink below their content (wide tables scroll inside). */
   .grid > *,
   .gridstats > * {
     min-width: 0;
   }
   .gridstats {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-    gap: 12px;
-  }
-
-  /* ─── Navigation ─────────────────────────────────────────────────────── */
-  .navlink {
-    position: relative;
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    padding: 9px 12px;
-    border-radius: 10px;
-    color: var(--muted);
-    font-size: 14px;
-    font-weight: 500;
-    transition: color 0.2s ease;
-  }
-  .navlink:hover {
-    color: var(--ink);
-  }
-  .navlink.active {
-    color: var(--accent-text);
-    font-weight: 600;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: var(--gap);
   }
 
   /* ─── Decorative ─────────────────────────────────────────────────────── */
   .gridlines {
-    background-image: radial-gradient(
-      color-mix(in srgb, var(--accent) 35%, transparent) 1px,
-      transparent 1.2px
-    );
+    background-image: radial-gradient(var(--line-strong) 1px, transparent 1.2px);
     background-size: 20px 20px;
   }
   .hairline-x {
-    background-image: linear-gradient(
-      to right,
-      var(--line-strong) 50%,
-      transparent 50%
-    );
+    background-image: linear-gradient(to right, var(--line-strong) 50%, transparent 50%);
     background-size: 8px 1px;
     background-repeat: repeat-x;
   }
   .kbd {
+    font-family: var(--font-mono), ui-monospace, monospace;
     font-size: 11px;
     font-weight: 600;
-    border: 1px solid var(--line-strong);
-    border-bottom-width: 2px;
-    border-radius: 6px;
-    padding: 1px 6px;
-    color: var(--muted);
+    border-radius: 7px;
+    padding: 2px 7px;
+    background: var(--surface-3);
+    color: var(--ink-2);
   }
   @keyframes marquee {
     to {
@@ -434,7 +428,7 @@
   }
   @keyframes pulse-dot {
     0% {
-      box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 60%, transparent);
+      box-shadow: 0 0 0 0 color-mix(in oklch, currentColor 60%, transparent);
     }
     100% {
       box-shadow: 0 0 0 8px transparent;
@@ -444,7 +438,8 @@
     width: 7px;
     height: 7px;
     border-radius: 99px;
-    background: var(--accent);
+    background: currentColor;
+    color: var(--brand);
     animation: pulse-dot 1.6s ease-out infinite;
   }
 
@@ -466,24 +461,131 @@
   }
 
   .glass {
-    background: color-mix(in srgb, var(--bg) 82%, transparent);
-    backdrop-filter: saturate(1.4) blur(16px);
-    -webkit-backdrop-filter: saturate(1.4) blur(16px);
-  }
-  .rail {
-    background:
-      radial-gradient(120% 60% at 50% 0%, rgba(234, 88, 12, 0.28), transparent 60%),
-      linear-gradient(180deg, #24170f 0%, #1a110b 50%, #120b07 100%);
-    border-right: 1px solid #2e1f15;
-  }
-  html.dark .rail {
-    background:
-      radial-gradient(120% 60% at 50% 0%, rgba(249, 115, 22, 0.22), transparent 60%),
-      linear-gradient(180deg, #140c07 0%, #0a0604 100%);
-    border-color: #24160d;
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    box-shadow: var(--shadow);
   }
   .ink-track {
-    background: color-mix(in srgb, var(--hero-ink) 20%, transparent);
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  /* Landing page: a table seen from above, drawn stroke by stroke. The
+     camera pushes in and levels off like a drone settling over the table,
+     then keeps a slow hover. */
+  .table-shot {
+    animation:
+      drone-in 4.2s cubic-bezier(0.2, 0.8, 0.2, 1) both,
+      drone-hover 14s ease-in-out 4.2s infinite alternate;
+  }
+  @keyframes drone-in {
+    from {
+      transform: scale(1.5) rotate(-26deg);
+    }
+    to {
+      transform: scale(1) rotate(-9deg);
+    }
+  }
+  @keyframes drone-hover {
+    from {
+      transform: scale(1) rotate(-9deg);
+    }
+    to {
+      transform: scale(1.05) rotate(-3deg);
+    }
+  }
+  .draw :is(rect, circle, line, path) {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: draw var(--dur, 0.9s) cubic-bezier(0.6, 0, 0.2, 1) var(--d, 0s) forwards;
+  }
+  .serve {
+    opacity: 0;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: serve 0.9s cubic-bezier(0.2, 1.3, 0.3, 1) var(--d, 0s) forwards;
+  }
+  @keyframes serve {
+    from {
+      opacity: 0;
+      transform: scale(0.3) rotate(-70deg);
+    }
+    35% {
+      opacity: 1;
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) rotate(0deg);
+    }
+  }
+  @keyframes draw {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+}
+
+/* The launch curtain plays once per session. */
+html[data-booted] .splash {
+  display: none;
+}
+
+/* ─── Pointer light ──────────────────────────────────────────────────────
+   A soft light under the cursor on whichever card it is over. */
+.card::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    340px circle at var(--mx, -999px) var(--my, -999px),
+    color-mix(in oklch, var(--brand) 13%, transparent),
+    transparent 62%
+  );
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+.card:hover::after {
+  opacity: 1;
+}
+.card-ink::after {
+  background: radial-gradient(340px circle at var(--mx, -999px) var(--my, -999px), rgba(255, 255, 255, 0.2), transparent 62%);
+}
+[data-magnetic] {
+  transition: translate 0.35s cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+/* ─── Page transitions (View Transitions API) ────────────────────────────
+   Only the page layer moves. Header, dock, 3D object, notifications and
+   tour are their own layers and stay put. */
+::view-transition-group(header),
+::view-transition-group(dock),
+::view-transition-group(scene),
+::view-transition-group(toasts),
+::view-transition-group(tour) {
+  animation-duration: 0.01s;
+}
+::view-transition-old(page) {
+  animation: page-out 0.22s cubic-bezier(0.4, 0, 1, 1) both;
+}
+::view-transition-new(page) {
+  animation: none;
+  opacity: 0;
+}
+@keyframes page-out {
+  to {
+    opacity: 0;
+    transform: translateX(-56px) scale(0.985);
+  }
+}
+html[data-dir="back"]::view-transition-old(page) {
+  animation-name: page-out-back;
+}
+@keyframes page-out-back {
+  to {
+    opacity: 0;
+    transform: translateX(56px) scale(0.985);
   }
 }
 
@@ -492,17 +594,20 @@
   .desktop {
     display: none !important;
   }
-  .main {
-    padding: 20px 16px 110px !important;
-  }
-  .mobilebar {
-    display: flex !important;
-  }
 }
-.mobilebar {
-  display: none;
+@media (min-width: 768px) {
+  .mobile {
+    display: none !important;
+  }
 }
 
+html[data-motion="reduced"] *,
+html[data-motion="reduced"] *::before,
+html[data-motion="reduced"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -514,13 +619,9 @@
 }
 
 @media print {
-  aside,
   header,
-  .mobilebar,
+  .dock,
   .no-print {
     display: none !important;
-  }
-  .md\:ml-\[84px\] {
-    margin-left: 0 !important;
   }
 }

@@ -9,8 +9,6 @@ import {
   type Variants,
 } from "framer-motion";
 import { X } from "lucide-react";
-import { useMunshi } from "@/components/MunshiProvider";
-import { SpotCard } from "@/components/fx";
 
 export const ease = [0.2, 0.8, 0.2, 1] as const;
 
@@ -34,67 +32,73 @@ export const Card = ({
   <div className={"card " + (lift ? "lift " : "") + className}>{children}</div>
 );
 
-// Page heading: mono eyebrow, then the title rises word by word out of a mask.
+// Page heading (leaves room on the right for the page's 3D object): accent kicker, then the title tips up word by word. The last word is set in italic serif and painted with the accent.
 export const Title = ({
   kicker,
   title,
   sub,
   action,
+  compact = false,
 }: {
   kicker: string;
   title: string;
   sub: string;
   action?: React.ReactNode;
+  compact?: boolean;
 }) => {
   const words = title.split(" ");
   return (
-    <div className="mb-8 md:mb-10 flex flex-wrap items-end justify-between gap-5">
+    <div
+      className={
+        "flex flex-wrap items-end justify-between gap-6 " +
+        (compact ? "mb-6" : "mb-8 md:mb-12 md:pt-4 md:pr-[210px] lg:pr-[250px]")
+      }
+    >
       <div className="max-w-3xl">
         <motion.div
-          className="tag tag-accent mb-4"
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease }}
+          className="flex items-center gap-2.5 text-sm font-bold text-[var(--accent-text)] mb-3"
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.45, ease }}
         >
-          <span className="live-dot" />
+          <span className="h-[3px] w-7 rounded-full bg-current" />
           {kicker}
         </motion.div>
-        <h1 aria-label={title}>
+        <h1
+          aria-label={title}
+          className={compact ? "!text-[clamp(26px,3vw,36px)]" : ""}
+          style={{ perspective: 800 }}
+        >
           {words.map((w, i) => (
-            <span
+            <motion.span
               key={i}
               aria-hidden
-              className="inline-block overflow-hidden align-bottom pb-[0.08em] -mb-[0.08em]"
+              className={
+                "inline-block mr-[0.22em] origin-bottom " +
+                (words.length > 1 && i === words.length - 1 ? "serif" : "")
+              }
+              initial={{ opacity: 0, y: 26, rotateX: 55 }}
+              animate={{ opacity: 1, y: 0, rotateX: 0 }}
+              transition={{ duration: 0.7, ease, delay: 0.06 + i * 0.07 }}
             >
-              <motion.span
-                className={
-                  "inline-block " +
-                  (words.length > 1 && i === words.length - 1 ? "serif" : "")
-                }
-                initial={{ y: "105%" }}
-                animate={{ y: 0 }}
-                transition={{ duration: 0.7, ease, delay: 0.05 + i * 0.06 }}
-              >
-                {w}
-                {i < words.length - 1 ? " " : ""}
-              </motion.span>
-            </span>
+              {w}
+            </motion.span>
           ))}
         </h1>
         <motion.p
-          className="muted mt-4 text-[15px] max-w-xl"
-          initial={{ opacity: 0, y: 6 }}
+          className="muted mt-4 text-base max-w-xl"
+          initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease, delay: 0.25 }}
+          transition={{ duration: 0.5, ease, delay: 0.3 }}
         >
           {sub}
         </motion.p>
       </div>
       {action && (
         <motion.div
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease, delay: 0.3 }}
+          initial={{ opacity: 0, scale: 0.92 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, ease, delay: 0.35 }}
         >
           {action}
         </motion.div>
@@ -105,11 +109,16 @@ export const Title = ({
 
 const container: Variants = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.055, delayChildren: 0.12 } },
+  show: { transition: { staggerChildren: 0.07, delayChildren: 0.15 } },
 };
 const item: Variants = {
-  hidden: { opacity: 0, y: 14 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.55, ease } },
+  hidden: { opacity: 0, y: 30, scale: 0.96 },
+  show: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { type: "spring", stiffness: 180, damping: 22 },
+  },
 };
 
 export function Stagger({
@@ -198,24 +207,29 @@ export function Stat({
   icon?: React.ReactNode;
 }) {
   return (
-    <SpotCard>
-      <div className="flex justify-between items-start">
+    <div className="card lift h-full overflow-hidden group">
+      <div className="relative flex justify-between items-start">
         <div className="eyebrow">{label}</div>
         {icon && <span className="muted">{icon}</span>}
       </div>
-      <div className={"display text-[30px] font-bold mt-4 tracking-tight " + tone}>
+      <div
+        className={
+          "relative display text-[34px] leading-none font-extrabold mt-4 tracking-[-0.045em] " +
+          tone
+        }
+      >
         {typeof value === "number" ? (
           <Counter value={value} format={format} />
         ) : (
-          <span className="num">{value}</span>
+          <span className="num text-[22px] tracking-[-0.03em]">{value}</span>
         )}
       </div>
-      {hint && <div className="text-xs muted mt-2">{hint}</div>}
-    </SpotCard>
+      {hint && <div className="relative text-xs muted mt-3">{hint}</div>}
+    </div>
   );
 }
 
-// Pill tabs with a sliding ink indicator.
+// Segmented control with a sliding raised thumb.
 export function Segmented({
   options,
   value,
@@ -230,7 +244,7 @@ export function Segmented({
   return (
     <div
       role="tablist"
-      className="inline-flex flex-wrap gap-1 p-1 rounded-full border border-line bg-surface-2"
+      className="inline-flex flex-wrap gap-1 p-1 rounded-full bg-[var(--surface-3)]"
     >
       {options.map((o) => (
         <button
@@ -239,16 +253,14 @@ export function Segmented({
           aria-selected={o === value}
           onClick={() => onChange(o)}
           className={
-            "relative px-4 h-9 rounded-full text-sm transition-colors " +
-            (o === value
-              ? "text-[var(--on-brand)]"
-              : "muted hover:text-[var(--ink)]")
+            "relative px-4 h-9 rounded-full text-sm font-semibold transition-colors " +
+            (o === value ? "text-[var(--ink)]" : "muted hover:text-[var(--ink)]")
           }
         >
           {o === value && (
             <motion.span
               layoutId={"seg-" + id}
-              className="absolute inset-0 rounded-full bg-[var(--brand)] shadow-sm"
+              className="absolute inset-0 rounded-full bg-[var(--surface)] shadow-[var(--shadow)]"
               transition={{ type: "spring", stiffness: 500, damping: 38 }}
             />
           )}
@@ -294,16 +306,16 @@ export function Sheet({
             role="dialog"
             aria-modal
             aria-label={title}
-            className="relative bg-surface w-full max-w-md h-full p-7 overflow-auto border-l border-line"
-            initial={{ x: "100%" }}
+            className="relative glass !bg-[var(--glass-strong)] w-full max-w-md h-[calc(100%-24px)] m-3 p-7 overflow-auto border border-line rounded-[var(--r)]"
+            initial={{ x: "110%" }}
             animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ duration: 0.45, ease }}
+            exit={{ x: "110%" }}
+            transition={{ type: "spring", stiffness: 300, damping: 32 }}
           >
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl">{title}</h2>
               <button
-                className="btn2 !px-0 w-10"
+                className="btn2 !px-0 w-11"
                 aria-label="Close"
                 onClick={onClose}
               >
@@ -327,7 +339,7 @@ export function Bar({
   className?: string;
 }) {
   return (
-    <div className="h-1.5 rounded-full bg-surface-3 overflow-hidden">
+    <div className="h-2 rounded-full bg-surface-3 overflow-hidden">
       <motion.div
         className={
           "h-full rounded-full origin-left " +
@@ -341,26 +353,31 @@ export function Bar({
   );
 }
 
+// Chart colours resolve from the live accent tokens, so charts follow the
+// owner's personalisation without re-rendering.
 export function useChartColors() {
-  const { dark } = useMunshi();
   return {
-    ink: dark ? "#fb923c" : "#c2410c",
-    ink2: dark ? "#2a332f" : "#c9d4d0",
-    accent: dark ? "#7c2d12" : "#fed7aa",
-    pos: dark ? "#4ade80" : "#15803d",
-    neg: dark ? "#ff6b74" : "#d92d3a",
-    warn: dark ? "#fbbf24" : "#b45309",
-    grid: dark ? "#1c2220" : "#e6ebe9",
-    series: dark
-      ? ["#fb923c", "#facc15", "#fdba74", "#9a3412", "#fed7aa"]
-      : ["#c2410c", "#ea580c", "#ca8a04", "#7c2d12", "#fdba74"],
+    ink: "var(--brand)",
+    ink2: "var(--line-strong)",
+    accent: "var(--accent-soft)",
+    pos: "var(--pos)",
+    neg: "var(--neg)",
+    warn: "var(--warn)",
+    grid: "var(--line)",
+    series: [
+      "var(--brand)",
+      "var(--chart-2)",
+      "var(--chart-3)",
+      "var(--pos)",
+      "var(--warn)",
+    ],
   };
 }
 
 export function ChartTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-xl border border-line bg-surface px-3 py-2 shadow-[var(--shadow)] text-xs">
+    <div className="glass !bg-[var(--glass-strong)] rounded-2xl border border-line px-3.5 py-2.5 text-xs">
       {label !== undefined && <div className="eyebrow mb-1">{label}</div>}
       {payload.map((p: any) => (
         <div key={p.dataKey ?? p.name} className="flex gap-3 justify-between">

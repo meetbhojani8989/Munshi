@@ -9,7 +9,8 @@ import {
   Database,
   Download,
   RotateCcw,
-  Moon,
+  Palette,
+  LogOut,
   Check,
   Lock,
   Server,
@@ -19,6 +20,8 @@ import {
   Receipt,
 } from "lucide-react";
 import type { Business } from "@/lib/core";
+import { useMunshi } from "@/components/MunshiProvider";
+import { PRESETS, DEFAULT_PREFS, type Prefs } from "@/lib/prefs";
 import { Title, Segmented, Counter, usd, ease } from "@/components/layout/ui";
 
 // AWS endpoint (API Gateway → Lambda) that creates a hosted subscription checkout.
@@ -65,7 +68,7 @@ const plans = [
     ],
   },
 ];
-const tabs = ["General", "Team", "Integrations", "Billing", "Data"];
+const tabs = ["Personalize", "Business", "Team", "Integrations", "Billing", "Data", "Account"];
 const flow = [
   "Create secure session",
   "Hand off to AWS checkout",
@@ -88,8 +91,8 @@ function Switch({
       aria-label={label}
       onClick={onClick}
       className={
-        "relative w-12 h-7 rounded-full transition-colors " +
-        (on ? "bg-[var(--brand)]" : "bg-[var(--line-strong)]")
+        "relative w-12 h-7 rounded-full transition-colors shrink-0 " +
+        (on ? "bg-[var(--brand)]" : "bg-[var(--surface-3)]")
       }
     >
       <motion.span
@@ -358,16 +361,16 @@ function Billing({ b }: { b: Business }) {
                   className={
                     "relative w-6 h-6 rounded-full inline-flex items-center justify-center text-[11px] font-bold border transition-colors " +
                     (stage > i
-                      ? "bg-[#fb923c] text-[#1c0a00] border-transparent"
+                      ? "bg-[var(--hl)] text-[var(--hl-ink)] border-transparent"
                       : stage === i
-                        ? "border-[#fb923c]"
+                        ? "border-[var(--hl)]"
                         : "ink-track border-transparent")
                   }
                 >
                   {stage > i ? <Check size={12} strokeWidth={3} /> : i + 1}
                   {stage === i && (
                     <motion.span
-                      className="absolute inset-[-4px] rounded-full border-2 border-transparent border-t-[#fb923c]"
+                      className="absolute inset-[-4px] rounded-full border-2 border-transparent border-t-[var(--hl)]"
                       animate={{ rotate: 360 }}
                       transition={{
                         duration: 0.8,
@@ -450,6 +453,241 @@ function Billing({ b }: { b: Business }) {
   );
 }
 
+// One row of mutually exclusive choices with a sliding thumb.
+function Choice<T extends string>({
+  id,
+  label,
+  hint,
+  value,
+  options,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  hint: string;
+  value: T;
+  options: [T, string][];
+  onChange: (v: T) => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 py-4 border-t border-line first:border-0">
+      <div>
+        <div className="font-bold text-sm">{label}</div>
+        <div className="text-xs muted mt-0.5">{hint}</div>
+      </div>
+      <div role="radiogroup" aria-label={label} className="inline-flex p-1 rounded-full bg-[var(--surface-3)]">
+        {options.map(([v, text]) => (
+          <button
+            key={v}
+            role="radio"
+            aria-checked={v === value}
+            onClick={() => onChange(v)}
+            className={
+              "relative h-9 px-4 rounded-full text-sm font-semibold transition-colors " +
+              (v === value ? "text-[var(--ink)]" : "muted hover:text-[var(--ink)]")
+            }
+          >
+            {v === value && (
+              <motion.span
+                layoutId={"choice-" + id}
+                className="absolute inset-0 rounded-full bg-[var(--surface)] shadow-[var(--shadow)]"
+                transition={{ type: "spring", stiffness: 500, damping: 38 }}
+              />
+            )}
+            <span className="relative">{text}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const wheel = `conic-gradient(${Array.from({ length: 37 }, (_, i) => `oklch(0.66 0.2 ${i * 10}) ${i * 10}deg`).join(",")})`;
+
+// Colour wheel: drag (or use arrow keys) around the ring to pick any hue.
+function HueWheel({ hue, onChange }: { hue: number; onChange: (h: number) => void }) {
+  const ring = useRef<HTMLDivElement>(null);
+  const pick = (e: React.PointerEvent) => {
+    const r = ring.current!.getBoundingClientRect();
+    const deg = (Math.atan2(e.clientX - (r.left + r.width / 2), -(e.clientY - (r.top + r.height / 2))) * 180) / Math.PI;
+    onChange(Math.round((deg + 360) % 360));
+  };
+  return (
+    <div
+      ref={ring}
+      role="slider"
+      tabIndex={0}
+      aria-label="Accent colour"
+      aria-valuemin={0}
+      aria-valuemax={359}
+      aria-valuenow={hue}
+      aria-valuetext={`Hue ${hue} degrees`}
+      className="relative w-56 h-56 rounded-full shrink-0 touch-none cursor-grab active:cursor-grabbing select-none"
+      style={{
+        background: wheel,
+        mask: "radial-gradient(closest-side, transparent 67%, #000 68%)",
+        WebkitMask: "radial-gradient(closest-side, transparent 67%, #000 68%)",
+      }}
+      onPointerDown={(e) => {
+        e.currentTarget.setPointerCapture(e.pointerId);
+        pick(e);
+      }}
+      onPointerMove={(e) => e.buttons === 1 && pick(e)}
+      onKeyDown={(e) => {
+        const step = e.shiftKey ? 15 : 3;
+        if (e.key === "ArrowRight" || e.key === "ArrowUp") onChange((hue + step) % 360);
+        else if (e.key === "ArrowLeft" || e.key === "ArrowDown") onChange((hue - step + 360) % 360);
+        else return;
+        e.preventDefault();
+      }}
+    >
+      <span
+        aria-hidden
+        className="absolute left-1/2 top-1/2 w-0 h-0"
+        style={{ transform: `rotate(${hue}deg)` }}
+      >
+        <span className="absolute -left-[15px] -top-[109px] w-[30px] h-[30px] rounded-full border-[4px] border-white shadow-[0_2px_10px_rgba(0,0,0,.45)] bg-[var(--brand)]" />
+      </span>
+    </div>
+  );
+}
+
+// Personalisation: accent colour (any hue), white or black canvas, shape,
+// density, motion and the 3D object. Every change applies instantly and is
+// remembered.
+function Personalize() {
+  const { prefs, setPrefs } = useMunshi();
+  const set = <K extends keyof Prefs>(k: K, v: Prefs[K]) => setPrefs({ [k]: v } as Partial<Prefs>);
+  return (
+    <div className="grid lg:grid-cols-[1.25fr_1fr] gap-[var(--gap)] items-start">
+      <div className="card">
+        <Head icon={Palette} title="Accent colour" sub="Drag around the wheel to pick any colour" />
+        <div className="flex flex-wrap items-center gap-8 mt-6">
+          <div className="relative">
+            <HueWheel hue={prefs.hue} onChange={(h) => set("hue", h)} />
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <span className="w-20 h-20 rounded-full bg-[var(--brand)]" />
+              <span className="mono text-xs muted mt-2">{prefs.hue}°</span>
+            </div>
+          </div>
+          <div className="flex-1 min-w-[200px]">
+            <div className="eyebrow mb-3">Quick picks</div>
+            <div role="radiogroup" aria-label="Accent presets" className="flex flex-wrap gap-2.5">
+              {PRESETS.map((p) => {
+                const on = prefs.hue === p.hue;
+                return (
+                  <button
+                    key={p.label}
+                    role="radio"
+                    aria-checked={on}
+                    aria-label={p.label}
+                    title={p.label}
+                    onClick={() => set("hue", p.hue)}
+                    className="w-11 h-11 rounded-full inline-flex items-center justify-center text-white transition-transform hover:scale-110"
+                    style={{
+                      background: `oklch(0.6 0.2 ${p.hue})`,
+                      boxShadow: on ? `0 0 0 3px var(--surface), 0 0 0 5px oklch(0.6 0.2 ${p.hue})` : "none",
+                    }}
+                  >
+                    {on && <Check size={17} strokeWidth={3} />}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-xs muted mt-4">
+              The accent colours buttons, charts, highlights and one part of each 3D object.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-7">
+          <Choice id="theme" label="Background" hint="Plain white or plain black" value={prefs.theme}
+            options={[["light", "White"], ["dark", "Black"]]} onChange={(v) => set("theme", v)} />
+          <Choice id="radius" label="Corners" hint="Shape of cards and inputs" value={prefs.radius}
+            options={[["sharp", "Sharp"], ["soft", "Soft"], ["round", "Round"]]} onChange={(v) => set("radius", v)} />
+          <Choice id="density" label="Density" hint="How much fits on screen" value={prefs.density}
+            options={[["comfy", "Comfortable"], ["compact", "Compact"]]} onChange={(v) => set("density", v)} />
+          <Choice id="motion" label="Motion" hint="Reduce if animation is distracting" value={prefs.motion}
+            options={[["full", "Full"], ["reduced", "Reduced"]]} onChange={(v) => set("motion", v)} />
+          <div className="flex items-center justify-between gap-3 py-4 border-t border-line">
+            <div>
+              <div className="font-bold text-sm">3D objects</div>
+              <div className="text-xs muted mt-0.5">The food model beside each page title</div>
+            </div>
+            <Switch on={prefs.object3d} onClick={() => set("object3d", !prefs.object3d)} label="3D objects" />
+          </div>
+        </div>
+        <button className="btn2 mt-4" onClick={() => setPrefs(DEFAULT_PREFS)}>
+          <RotateCcw size={14} /> Reset to default look
+        </button>
+      </div>
+
+      <div className="lg:sticky lg:top-24 grid gap-[var(--gap)]">
+        <div className="card card-ink">
+          <div className="eyebrow">Live preview</div>
+          <div className="display text-5xl font-extrabold tracking-[-0.05em] mt-3">$1,284</div>
+          <p className="text-sm muted mt-1">Taken today · 42 bills</p>
+          <div className="flex gap-2 mt-5">
+            <span className="btn-accent">Primary</span>
+            <span className="btn2">Secondary</span>
+          </div>
+        </div>
+        <div className="card">
+          <div className="eyebrow">Sample card</div>
+          <p className="display text-2xl font-extrabold tracking-[-0.03em] mt-2">
+            This is how <span className="serif">Munshi</span> looks.
+          </p>
+          <div className="flex flex-wrap gap-2 mt-4">
+            <span className="tag tag-accent">Accent</span>
+            <span className="tag tag-pos">Money in</span>
+            <span className="tag tag-neg">Money out</span>
+            <span className="tag tag-warn">Heads up</span>
+          </div>
+          <div className="flex gap-2 mt-5">
+            <span className="btn">Approve</span>
+            <span className="btn2">Dismiss</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LogoutButton() {
+  const { logout } = useMunshi();
+  return (
+    <button className="btn2" onClick={() => logout()}>
+      <LogOut size={15} /> Log out
+    </button>
+  );
+}
+
+// Signing out, and wiping what this browser remembers about the business.
+function Account() {
+  const { logout } = useMunshi();
+  return (
+    <div className="card max-w-xl">
+      <Head icon={LogOut} title="Account" sub="Signed in as Demo Owner" />
+      <div className="flex flex-wrap gap-2 mt-5">
+        <button className="btn" onClick={() => logout()}>
+          <LogOut size={15} /> Log out
+        </button>
+        <button
+          className="btn2 !text-[var(--neg)] hover:!border-[var(--neg)]"
+          onClick={() => {
+            if (!confirm("Log out and remove your setup answers and look from this browser?")) return;
+            localStorage.removeItem("munshi_profile");
+            localStorage.removeItem("munshi_prefs");
+            logout();
+          }}
+        >
+          Log out and forget this device
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function SettingsPage({
   b,
   act,
@@ -463,15 +701,16 @@ export function SettingsPage({
 }) {
   const params = useSearchParams();
   const [tab, setTab] = useState(() =>
-    tabs.includes(params.get("tab") || "") ? params.get("tab")! : "General",
+    tabs.includes(params.get("tab") || "") ? params.get("tab")! : "Personalize",
   );
   const [name, setName] = useState(b.name);
   return (
     <>
       <Title
-        kicker="Make it yours"
-        title="Settings"
-        sub="Manage the business, team, connections, subscription and your data."
+        kicker="Settings"
+        title="Make it yours"
+        sub="Choose how Munshi looks and moves, then manage the business behind it."
+        action={<LogoutButton />}
       />
       <div className="mb-5 overflow-x-auto">
         <Segmented
@@ -489,44 +728,28 @@ export function SettingsPage({
           exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.25, ease }}
         >
-          {tab === "General" && (
-            <div className="grid lg:grid-cols-2 gap-4">
-              <div className="card">
-                <Head
-                  icon={Building2}
-                  title="Business profile"
-                  sub="Shown on reports and exports"
+          {tab === "Personalize" && <Personalize />}
+          {tab === "Business" && (
+            <div className="card max-w-xl">
+              <Head
+                icon={Building2}
+                title="Business profile"
+                sub="Shown on reports and exports"
+              />
+              <label className="block text-xs font-semibold muted mt-5">
+                Business name
+                <input
+                  className="w-full mt-1.5 text-[var(--ink)]"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                 />
-                <label className="block text-xs muted mt-5">
-                  Business name
-                  <input
-                    className="w-full mt-1.5 text-[var(--ink)]"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                  />
-                </label>
-                <button
-                  className="btn mt-4"
-                  onClick={() => act("business", { name })}
-                >
-                  Save changes
-                </button>
-              </div>
-              <div className="card">
-                <Head
-                  icon={Moon}
-                  title="Appearance"
-                  sub="White by day, black by night"
-                />
-                <div className="flex justify-between items-center mt-6">
-                  <span className="text-sm">Dark theme</span>
-                  <Switch
-                    on={dark}
-                    onClick={() => setDark(!dark)}
-                    label="Dark theme"
-                  />
-                </div>
-              </div>
+              </label>
+              <button
+                className="btn mt-4"
+                onClick={() => act("business", { name })}
+              >
+                Save changes
+              </button>
             </div>
           )}
           {tab === "Team" && (
@@ -582,6 +805,7 @@ export function SettingsPage({
             </div>
           )}
           {tab === "Billing" && <Billing b={b} />}
+          {tab === "Account" && <Account />}
           {tab === "Data" && (
             <div className="card max-w-3xl">
               <Head

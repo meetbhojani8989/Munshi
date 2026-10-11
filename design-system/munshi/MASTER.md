@@ -1,53 +1,45 @@
 # Munshi Design System — MASTER
 
-Source of truth for every page. Tokens live in `app/globals.css`; shared components in `components/layout/ui.tsx`. Use tokens and components rather than raw hex values.
+Source of truth for every page. Tokens live in `app/globals.css`, personalisation in `lib/prefs.ts`, shared components in `components/layout/ui.tsx`. Use tokens and components, never raw hex values.
 
 ## Direction
-- **Style:** Data-Dense Dashboard (UI Pro Max `style` match): KPI cards, tables, charts, grid layout.
-- **Mood:** formal, trustworthy, calm. White canvas by day, pure black by night, emerald as the only brand colour.
-- **Avoid:** blobs, ornamental gradients, emoji icons, serif/italic display type.
+- **Idea:** a plain white (or plain black) canvas, one solid accent colour, and a 3D food object per section. No gradients, no coloured backdrops.
+- **Informed by Apple's HIG:** motion is purposeful and optional (Motion), colour means one thing and works in light and dark (Color), controls float above content and detail is disclosed progressively (Layout).
+- **Avoid:** gradients, fixed hex colours in components, a second navigation bar.
 
-## Colour tokens
-| Token | Light | Dark | Use |
-|---|---|---|---|
-| `--bg` | `#ffffff` | `#000000` | Page canvas |
-| `--surface` / `-2` / `-3` | `#ffffff` / `#f6f8f7` / `#e9efec` | `#0a0c0b` / `#111513` / `#1a201d` | Cards, wells, tracks |
-| `--ink` | `#0b1411` | `#f2f7f5` | Primary text |
-| `--muted` | `#64716c` | `#8b9893` | Secondary text |
-| `--line` / `--line-strong` | `#e6ebe9` / `#d3dbd8` | `#1c2220` / `#2a332f` | Borders |
-| `--brand` / `--on-brand` | `#047857` / `#fff` | `#10b981` / `#02140d` | Primary buttons |
-| `--accent` / `--on-accent` | `#059669` / `#fff` | `#34d399` / `#02140d` | Fills, bars, active states |
-| `--accent-text` | `#047857` | `#34d399` | Green text |
-| `--accent-soft` | `#e8f8f1` | `#072a1e` | Tinted chips/backgrounds |
-| `--hero` / `--hero-ink` | `#053d2e` / `#ecfdf5` | `#062a20` / `#ecfdf5` | Deep-green feature panels (`.card-ink`) |
-| `--pos` / `--neg` / `--warn` | `#047857` / `#d92d3a` / `#b45309` | `#34d399` / `#ff6b74` / `#fbbf24` | Money up / down / caution |
-
-Emerald `#059669` is the UI Pro Max colour database's contrast-adjusted value for `#10B981`.
-**Measured contrast (WCAG):** every text pair is ≥ 4.5:1 in both themes (body 18.7 / 19.4, muted 5.1 / 7.0, button 5.5 / 7.5, accent-text 5.5 / 10.9). Icons on accent: 3.8 / 9.9 (≥ 3:1).
+## Colour
+- **Canvas:** `--bg` is `#ffffff` or `#000000` only. Cards are a neutral step off it (`--surface`), with `--surface-2` / `-3` for wells and tracks. Neutrals carry no tint.
+- **Accent:** one hue, `--h`, chosen on the colour wheel in Settings (any hue 0–359; presets in `lib/prefs.ts`). `--brand` is that hue as a solid; `--accent-text` and `--accent-soft` are its text and tint forms. `.card-ink` is the accent as a surface with white text.
+- `--pos` / `--neg` / `--warn` stay semantic and do not follow the accent.
+- Charts use `useChartColors()` (brand, then `--chart-2` / `--chart-3`).
+- Paper elements (order tickets, receipt tape, setup ticket) are always white with dark ink, in both themes.
 
 ## Typography
-- **IBM Plex Sans** for everything, plus **IBM Plex Mono** only for invoice/receipt figures and IDs. This is the "Financial Trust" pairing (UI Pro Max typography match for fintech/banking). Loaded via `next/font` with `display: swap`.
-- h1: clamp(30–44px), 700, −0.03em. h2: 17px, 650. Body 14–15px. Numbers: `.num` (tabular figures).
-- In a multi-word page title, the last word renders in `--accent-text` (`.serif` class, kept for compatibility).
+- **Plus Jakarta Sans** for UI and headings (h1 700, −0.045em), **Instrument Serif italic** for the emphasised last word of a heading (`.serif`, painted with the accent gradient), **JetBrains Mono** for figures and IDs (`.mono`).
 
 ## Layout
-- **Rail (84px, deep green)** holds 5 workspaces: Overview · Sales · Stock · Finance · Intelligence, plus Search and Settings.
-- **Header** shows the workspace name, its page tabs (sliding underline), ⌘K search, business switcher, theme toggle and avatar.
-- **Mobile:** the rail becomes a 5-item bottom bar and the tabs scroll under the header. No horizontal scroll at 375px (verified on every route).
-- Content max-width 1360px; cards 16px radius; 16px grid gaps.
+- **Landing (`/login`):** headline and sign-in on the left; on the right a dining table seen from directly above draws itself in grey line (table, chairs, place settings, then each dish one by one) while the view pushes in and levels off like a drone, then hovers. On phones it sits above the headline. No 3D here.
+- **Onboarding (`/onboarding`):** six steps (business, hours, service, past bills, connections, review) with a live "setup ticket" on the right. "Skip, use the demo account" is always available. Answers are saved in `localStorage` under `munshi_profile`.
+- **Header:** floating capsule with logo, business switcher, ⌘K search, theme toggle and settings.
+- **Dock:** floating bottom capsule with five workspaces (Today · Service · Pantry · Money · Insight). The active one unfolds to show its pages. The pill at the end opens Ask Munshi.
+- **Pantry:** invoice scanning is a banner at the top of the page that opens the scanner inline.
+- **Ask Munshi:** full page, particle orb in the centre with one ask bar beneath it. The orb appears nowhere else.
+- Page titles reserve 250px on the right for the 3D object. Content max-width 1240px.
 
-## Components (`components/layout/ui.tsx`)
-`Title` (kicker chip + word-reveal h1) · `Card` (`lift` for hover) · `Stat` + `Counter` (count-up numbers) · `Stagger`/`Rise` (entrance cascade) · `Segmented` (pill tabs) · `Sheet` (right drawer, Esc to close) · `Bar` · `ChartTooltip` · `useChartColors()`.
+## Personalisation (`Settings → Personalize`)
+Accent hue (wheel plus quick picks), background (white/black), corners, density, motion and a 3D on/off switch. Stored in `localStorage` under `munshi_prefs` and applied to `<html>` before first paint. Log out lives in the Settings header and the Account tab.
 
 ## Motion
-- Entrances: 0.4–0.6s, ease `[0.2, 0.8, 0.2, 1]`, stagger 55ms (UI Pro Max "Stagger List" preset).
-- Springs for indicators (rail, tabs, toggles): stiffness ≈ 500, damping ≈ 38.
-- The signature motion is the **Cascade** (`CascadeDiagram`): one document fans out into four ledgers.
-- `MotionConfig reducedMotion="user"` plus a CSS reduced-motion override; looping/marquee motion stops under reduced motion and pauses on hover/focus.
+Motion tokens: `ease` in `components/layout/ui.tsx`, springs ≈ 400/32 for indicators, 0.2–0.45s for page-level moves. App-wide behaviour lives in `components/layout/Shell.tsx`.
+- **Launch:** the 3D burger assembles while a counter runs to 100. Plays once per browser session; any click or key skips it; "Replay the launch intro" is in the command palette.
+- **Page transitions:** View Transitions API. The outgoing page slides away in the direction of travel through the dock, then the new page assembles. Header, dock, 3D object, notifications and tour are separate layers and hold still. Falls back to a plain fade where the API is missing.
+- **Command palette** (⌘K): fuzzy search over pages and real actions, recent commands, a side pane with live figures for the highlighted command, and "Ask Munshi …" for anything typed.
+- **Notifications** (`Toaster`): a stacked pile that fans out on hover. Errors are `role="alert"` and stay until dismissed.
+- **Pointer light:** one soft light follows the cursor across cards. `data-magnetic` controls lean toward the pointer.
+- **Guided tour** (`Tour`): five stops, about 75 seconds, pause/back/next. It only navigates and explains.
+- **3D objects** (`components/fx/Scene3D.tsx`, three.js): Today = burger, Service = cloche, Pantry = jar, Money = iced donut, Insight = pizza pie-chart. Textured, lit with a warm key and cool rim, with a soft ground shadow.
+- **Paper:** order tickets sway on the rail, the latest bills print as a receipt, onboarding answers print onto a setup ticket.
+- Reduced motion (the setting or the OS preference) stops loops, skips page transitions, the pointer light and magnetism, and shortens the rest.
 
-## Accessibility checklist (applied)
-Skip-to-content link · visible focus ring (`--accent`) · `scroll-padding-top` so focus isn't hidden under the sticky header · `touch-action: manipulation` · icon-only buttons have `aria-label` · switches use `role="switch"`/`aria-checked` · charts have a legend and don't rely on hue alone · cascade toast is an `aria-live` region.
-
-## Payments
-App subscription only (Settings → Billing). Checkout is created by the AWS endpoint in `NEXT_PUBLIC_PAYMENT_API_URL`:
-`POST { businessId, plan, interval, amount (cents), currency, successUrl, cancelUrl } → { url }`.
+## Accessibility
+Skip link · visible focus ring · 44px minimum targets · `aria-current` on dock items · the hue wheel is a keyboard-operable `role="slider"` · switches and choice rows use `role="switch"` / `role="radio"` · charts carry legends.

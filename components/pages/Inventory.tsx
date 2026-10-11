@@ -1,8 +1,11 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Search, ArrowUpRight } from "lucide-react";
+import { Search, ArrowUpRight, ScanLine, X } from "lucide-react";
+import { AnimatePresence } from "framer-motion";
+import { Scan } from "@/components/pages/Scan";
 import type { Business, Item } from "@/lib/core";
 import { DishBadge } from "@/components/fx";
 import { metrics } from "@/lib/core";
@@ -36,14 +39,22 @@ export function Inventory({
   b,
   m,
   event,
+  act,
 }: {
   b: Business;
   m: ReturnType<typeof metrics>;
   event: boolean;
+  act: any;
 }) {
   const [search, setSearch] = useState(""),
     [view, setView] = useState("All"),
-    [selected, setSelected] = useState<Item | null>(null);
+    [selected, setSelected] = useState<Item | null>(null),
+    [scanning, setScanning] = useState(false);
+  // The command palette can open Pantry with the scanner already out.
+  const params = useSearchParams();
+  useEffect(() => {
+    if (params.get("scan")) setScanning(true);
+  }, [params]);
   const maxStock = Math.max(...b.items.map((i) => i.stock), 1);
   const rows = b.items
     .filter((i) => i.name.toLowerCase().includes(search.toLowerCase()))
@@ -57,12 +68,58 @@ export function Inventory({
 
   return (
     <>
+      {/* Scanning is the front door of the pantry, so it sits above everything. */}
+      <motion.section
+        className="card card-ink !p-4 md:!p-5 mb-8 flex flex-wrap items-center gap-4 overflow-hidden"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: "spring", stiffness: 200, damping: 22 }}
+      >
+        <span className="relative w-14 h-14 rounded-2xl bg-white/15 inline-flex items-center justify-center overflow-hidden shrink-0">
+          <ScanLine size={24} />
+          <motion.span
+            aria-hidden
+            className="absolute inset-x-2 h-[2px] rounded-full bg-white shadow-[0_0_12px_2px_rgba(255,255,255,.8)]"
+            animate={{ top: ["18%", "82%", "18%"] }}
+            transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+          />
+        </span>
+        <div className="flex-1 min-w-[200px]">
+          <div className="display text-xl font-extrabold tracking-tight">Scan a supplier bill</div>
+          <p className="text-sm muted">
+            Snap or drop an invoice. Stock, payables and the books update together.
+          </p>
+        </div>
+        <button
+          className="btn-accent !h-12 !px-6"
+          aria-expanded={scanning}
+          onClick={() => setScanning(!scanning)}
+        >
+          {scanning ? <X size={16} /> : <ScanLine size={16} />}
+          {scanning ? "Close scanner" : "Scan invoice"}
+        </button>
+      </motion.section>
+      <AnimatePresence>
+        {scanning && (
+          <motion.section
+            key="scanner"
+            className="mb-10"
+            initial={{ opacity: 0, y: -16, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -16, scale: 0.98 }}
+            transition={{ duration: 0.4, ease }}
+          >
+            <Scan b={b} act={act} embedded />
+          </motion.section>
+        )}
+      </AnimatePresence>
+
       <Title
-        kicker="Know what’s in the walk-in"
-        title="Pantry stock"
-        sub="Every ingredient and dish, counted live as bills come in and plates go out."
+        kicker="Pantry"
+        title="What’s on the shelf"
+        sub="Every item, counted live as bills come in and orders go out."
       />
-      <Stagger className="grid gap-4">
+      <Stagger className="grid gap-[var(--gap)]">
         <div className="gridstats">
           <Rise>
             <Stat

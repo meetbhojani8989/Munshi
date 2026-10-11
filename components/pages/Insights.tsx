@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { Business } from "@/lib/core";
 import { findLeak } from "@/lib/ai/leak";
 import { Title, Card, usd, money } from "@/components/layout/ui";
+import { useMunshi } from "@/components/MunshiProvider";
 
 export function Insights({
   b,
@@ -12,6 +13,7 @@ export function Insights({
   act: any;
   leak: number;
 }) {
+  const { notify } = useMunshi();
   const suggestions = b.suggestions.filter((s) => !s.status);
   const [thinking, setThinking] = useState(false);
   const found = findLeak(b);
@@ -34,7 +36,7 @@ export function Insights({
           </button>
         }
       />
-      <Card className="mb-5 bg-[#fff9e8]">
+      <Card className="mb-5 !bg-[var(--warn-soft)] !border-transparent">
         <div className="text-xs uppercase tracking-widest text-amber font-bold">
           Leak Finder
         </div>
@@ -117,7 +119,13 @@ export function Insights({
         </div>
         <button
           className="btn2 mt-4"
-          onClick={() => alert("Added to your ideas list for review.")}
+          onClick={() =>
+            notify({
+              kind: "info",
+              title: "Noted for this session",
+              message: "Saved idea lists are not stored yet.",
+            })
+          }
         >
           Save idea
         </button>

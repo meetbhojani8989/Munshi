@@ -51,7 +51,7 @@ export function Scorecard({ b }: { b: Business }) {
                 <XAxis dataKey="name" />
                 <YAxis domain={[0, 100]} unit="%" />
                 <Tooltip />
-                <Line dataKey="accuracy" stroke="#16845e" strokeWidth={3} />
+                <Line dataKey="accuracy" stroke="var(--brand)" strokeWidth={3} />
               </LineChart>
             </ResponsiveContainer>
           </div>

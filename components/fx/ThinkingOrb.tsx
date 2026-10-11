@@ -133,12 +133,14 @@ export function ThinkingOrb({
   sequence,
   run = 0,
   dark = false,
+  color,
   className = "",
   onStep,
 }: {
   sequence: { shape: OrbShape; hold: number }[];
   run?: number;
   dark?: boolean;
+  color?: string;
   className?: string;
   onStep?: (i: number) => void;
 }) {
@@ -191,9 +193,12 @@ export function ThinkingOrb({
     canvas.addEventListener("pointermove", onMove);
     canvas.addEventListener("pointerleave", onLeave);
 
-    const front = dark ? [251, 146, 60] : [234, 88, 12];
-    const back = dark ? [120, 90, 70] : [214, 196, 182];
-    const gold = dark ? [250, 204, 21] : [202, 138, 4];
+const hex = (color || "#6d4dff").replace("#", "");
+    const base = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    const mix = (to: number, t: number) => base.map((v) => Math.round(v + (to - v) * t));
+    const front = dark ? mix(255, 0.45) : base;
+    const back = dark ? mix(40, 0.55) : mix(225, 0.7);
+    const gold = dark ? [255, 255, 255] : mix(0, 0.45);
 
     const frame = (now: number) => {
       const dt = Math.min(0.25, (now - last) / 1000);
@@ -276,7 +281,7 @@ export function ThinkingOrb({
       canvas.removeEventListener("pointerleave", onLeave);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [run, dark, reduce, sequence.map((s) => s.shape).join()]);
+  }, [run, dark, color, reduce, sequence.map((s) => s.shape).join()]);
 
   return <canvas ref={ref} className={"block w-full h-full touch-none " + className} aria-hidden />;
 }
