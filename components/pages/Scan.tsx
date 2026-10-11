@@ -501,7 +501,7 @@ export function Scan({
                   </div>
                   <button
                     className="btn w-full !h-12 mt-5 group"
-                    disabled={posting || step === 0 || scanning || !rows.length}
+                    disabled={posting || !rows.length}
                     onClick={confirm}
                   >
                     {posting ? "Posting…" : "Confirm invoice"}
