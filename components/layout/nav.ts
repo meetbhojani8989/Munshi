@@ -1,0 +1,33 @@
+import {
+  LayoutDashboard,
+  ScanLine,
+  ReceiptText,
+  Boxes,
+  BookOpen,
+  ChartNoAxesCombined,
+  Sparkles,
+  FlaskConical,
+  Target,
+  ShoppingBag,
+  Truck,
+  MessageCircle,
+  ChartColumnIncreasing,
+  Settings,
+} from "lucide-react";
+
+export const nav = [
+  ["dashboard", "Today", LayoutDashboard],
+  ["scan", "Scan invoice", ScanLine],
+  ["sales", "Sales", ReceiptText],
+  ["inventory", "Inventory", Boxes],
+  ["books", "Books", BookOpen],
+  ["analytics", "Analytics", ChartNoAxesCombined],
+  ["insights", "Insights", Sparkles],
+  ["lab", "Pricing Lab", FlaskConical],
+  ["scorecard", "Scorecard", Target],
+  ["orders", "Orders", ShoppingBag],
+  ["vendors", "Vendors", Truck],
+  ["assistant", "Ask Munshi", MessageCircle],
+  ["valuation", "Valuation", ChartColumnIncreasing],
+  ["settings", "Settings", Settings],
+] as const;
