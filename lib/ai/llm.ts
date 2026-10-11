@@ -2,7 +2,7 @@
 // When any of them is unset it falls back to a deterministic mock so the app
 // runs with no env vars at all.
 export type ChatMessage={role:'system'|'user'|'assistant';content:string};
-export type ChatOptions={json?:boolean;temperature?:number};
+export type ChatOptions={json?:boolean;temperature?:number;effort?:'low'|'medium'|'high'};
 
 export interface LlmClient{
   readonly live:boolean;
@@ -19,7 +19,7 @@ function env(){
 class OpenAICompatibleClient implements LlmClient{
   readonly live=true;
   constructor(private config:{baseUrl:string;apiKey:string;model:string}){}
-  async complete(messages:ChatMessage[],options:ChatOptions={}):Promise<string>{
+  async complete(messages:ChatMessage[],options:ChatOptions={},attempt=0):Promise<string>{
     const response=await fetch(`${this.config.baseUrl}/chat/completions`,{
       method:'POST',
       headers:{'Content-Type':'application/json',Authorization:`Bearer ${this.config.apiKey}`},
@@ -28,11 +28,18 @@ class OpenAICompatibleClient implements LlmClient{
         temperature:options.temperature??0.2,
         messages,
         ...(options.json?{response_format:{type:'json_object'}}:{}),
+        // Reasoning models think less (and answer ~2x faster) at low effort.
+        ...(options.effort?{reasoning_effort:options.effort}:{}),
       }),
     });
     if(!response.ok){
       // Some hosted models reject response_format; retry once without it.
       if(options.json&&response.status===400)return this.complete(messages,{...options,json:false});
+      // Shared inference endpoints shed load under spikes; back off and retry twice.
+      if((response.status===503||response.status===429)&&attempt<2){
+        await new Promise(r=>setTimeout(r,600*(attempt+1)));
+        return this.complete(messages,options,attempt+1);
+      }
       throw new Error(`LLM request failed (${response.status})`);
     }
     const data=await response.json();

@@ -164,7 +164,7 @@ async function agentPropose(client:LlmClient,agent:{name:AgentName;focus:string}
         leaderboard:ctx.leaderboard.slice(0,6).map(p=>({agent:p.agent,strategy:p.strategy,wape:p.wape})),
         lessons:ctx.lessons.slice(-8),
       });
-      const raw=await client.complete([{role:'system',content:SYSTEM(agent)},{role:'user',content:user}],{json:true,temperature:0.7});
+      const raw=await client.complete([{role:'system',content:SYSTEM(agent)},{role:'user',content:user}],{json:true,temperature:0.7,effort:'low'});
       const parsed=proposalsSchema.parse(parseJson(raw));
       return parsed.proposals.slice(0,2).map(p=>({strategy:p.strategy,hypothesis:p.hypothesis||HYPOTHESES[agent.name]}));
     }catch(e){console.error(`${agent.name} fell back to local search:`,e)}
@@ -192,7 +192,7 @@ async function critic(client:LlmClient,proposals:Proposal[],prevBest:number,memo
       const raw=await client.complete([
         {role:'system',content:'You are the critic of a forecasting agent team. Read this round\'s back-test results and write up to 3 short, specific lessons (each under 20 words) that will help the next round. Return ONLY JSON {"lessons":["..."]}.'},
         {role:'user',content:JSON.stringify({previousBestWape:prevBest,results:proposals.map(p=>({agent:p.agent,strategy:p.strategy,wape:p.wape})),existingLessons:memory.slice(-6)})},
-      ],{json:true,temperature:0.3});
+      ],{json:true,temperature:0.3,effort:'low'});
       const lessons=z.object({lessons:z.array(z.string()).min(1)}).parse(parseJson(raw)).lessons;
       return lessons.slice(0,3).map(l=>l.slice(0,180));
     }catch(e){console.error('Critic fell back to local lessons:',e)}

@@ -7,3 +7,6 @@ src-tauri/server
 .DS_Store
 .env*
 !.env.example
+
+# private registry tokens
+.npmrc
