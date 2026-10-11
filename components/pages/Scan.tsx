@@ -110,7 +110,7 @@ function InvoicePaper({
           className="absolute left-0 right-0 h-16 pointer-events-none"
           style={{
             background:
-              "linear-gradient(to bottom, transparent, rgba(234,88,12,.32) 85%, #c2410c 86%, transparent 88%)",
+              "linear-gradient(to bottom, transparent, color-mix(in oklch, var(--brand) 30%, transparent) 85%, var(--brand) 86%, transparent 88%)",
           }}
           initial={{ top: "-15%" }}
           animate={{ top: ["-15%", "100%", "-15%"] }}
@@ -121,7 +121,15 @@ function InvoicePaper({
   );
 }
 
-export function Scan({ b, act }: { b: Business; act: any }) {
+export function Scan({
+  b,
+  act,
+  embedded = false,
+}: {
+  b: Business;
+  act: any;
+  embedded?: boolean;
+}) {
   const [file, setFile] = useState(""),
     [vendor, setVendor] = useState("Keystone Produce"),
     [date, setDate] = useState(new Date().toISOString().slice(0, 10)),
@@ -177,6 +185,7 @@ export function Scan({ b, act }: { b: Business; act: any }) {
   return (
     <>
       <Title
+        compact={embedded}
         kicker="The cascade"
         title="Scan a supplier invoice"
         sub="Capture, review, then confirm. One bill updates stock, payables, and books."

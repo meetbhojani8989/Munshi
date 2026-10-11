@@ -2,9 +2,11 @@
 import { useState } from "react";
 import { Truck, Mail, TrendingUp, Check } from "lucide-react";
 import type { Business } from "@/lib/core";
+import { useMunshi } from "@/components/MunshiProvider";
 import { Title, Stagger, Rise, Sheet, usd } from "@/components/layout/ui";
 
 export function Vendors({ b, act }: { b: Business; act: any }) {
+  const { notify } = useMunshi();
   const names = [
     "Keystone Produce",
     "Centre Dairy",
@@ -105,9 +107,11 @@ export function Vendors({ b, act }: { b: Business; act: any }) {
         <button
           className="btn w-full mt-8"
           onClick={() => {
-            alert(
-              "Purchase order approved for demo. Vendor connection coming soon.",
-            );
+            notify({
+              kind: "info",
+              title: "Draft approved",
+              message: "Demo only: nothing is sent to the vendor yet.",
+            });
             setPo("");
           }}
         >

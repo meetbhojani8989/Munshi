@@ -48,7 +48,7 @@ export function Valuation({
             {/* range bar: low marker, high marker, midpoint */}
             <div className="relative h-2 rounded-full ink-track mt-8">
               <motion.div
-                className="absolute inset-y-0 left-[20%] right-[20%] rounded-full bg-[#fb923c] origin-left"
+                className="absolute inset-y-0 left-[20%] right-[20%] rounded-full bg-[var(--hl)] origin-left"
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: 1 }}
                 transition={{ duration: 1.2, ease, delay: 0.3 }}

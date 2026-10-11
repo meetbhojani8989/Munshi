@@ -1,22 +1,28 @@
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
-import { Outfit, Rubik, IBM_Plex_Mono } from "next/font/google";
+import {
+  Plus_Jakarta_Sans,
+  Instrument_Serif,
+  JetBrains_Mono,
+} from "next/font/google";
 import { MunshiProvider } from "@/components/MunshiProvider";
 import { Shell } from "@/components/layout/Shell";
+import { prefsBootScript } from "@/lib/prefs";
 
-const sans = Rubik({
+const sans = Plus_Jakarta_Sans({
   subsets: ["latin"],
   variable: "--font-sans",
   display: "swap",
 });
-const display = Outfit({
+const serif = Instrument_Serif({
   subsets: ["latin"],
-  variable: "--font-display",
+  weight: "400",
+  style: ["normal", "italic"],
+  variable: "--font-serif",
   display: "swap",
 });
-const mono = IBM_Plex_Mono({
+const mono = JetBrains_Mono({
   subsets: ["latin"],
-  weight: ["400", "500"],
   variable: "--font-mono",
   display: "swap",
 });
@@ -29,13 +35,10 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+    { media: "(prefers-color-scheme: light)", color: "#f6f4fd" },
+    { media: "(prefers-color-scheme: dark)", color: "#130f24" },
   ],
 };
-
-// Applies the saved theme before first paint so dark users never see a white flash.
-const themeScript = `try{if(localStorage.getItem("munshi_theme")==="dark")document.documentElement.classList.add("dark")}catch(e){}`;
 
 export default function RootLayout({
   children,
@@ -45,11 +48,11 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${sans.variable} ${display.variable} ${mono.variable}`}
+      className={`${sans.variable} ${serif.variable} ${mono.variable}`}
       suppressHydrationWarning
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script dangerouslySetInnerHTML={{ __html: prefsBootScript }} />
       </head>
       <body>
         <MunshiProvider>

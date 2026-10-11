@@ -42,8 +42,8 @@ export function BorderBeam({
   duration = 9,
   anchor = 90,
   borderWidth = 1.5,
-  colorFrom = "#fb923c",
-  colorTo = "#facc15",
+  colorFrom = "var(--accent)",
+  colorTo = "var(--hl)",
   delay = 0,
 }: {
   className?: string;
@@ -126,11 +126,11 @@ export function OrbitingCircles({
 }
 
 /* ─── Spotlight + tilt card ──────────────────────────────────────────── */
-// A card that tilts toward the pointer and carries a saffron spotlight.
+// A card that tilts toward the pointer and carries a soft brand spotlight.
 export function SpotCard({
   children,
   className = "",
-  tilt = 6,
+  tilt = 0,
   beam = false,
 }: {
   children: React.ReactNode;
@@ -350,17 +350,17 @@ export function TicketBurst({
           return (
             <motion.div
               key={t.id}
-              className="absolute bottom-4 flex items-center gap-2 rounded-full pl-1.5 pr-3 py-1.5 bg-white/95 text-[#1c1410] shadow-lg text-xs font-medium"
+              className="absolute bottom-4 flex items-center gap-2 rounded-full pl-1.5 pr-3 py-1.5 bg-white/95 text-[#10131c] shadow-lg text-xs font-medium"
               style={{ left: `${t.x}%` }}
               initial={{ opacity: 0, y: 20, scale: 0.7, rotate: -6 }}
               animate={{ opacity: [0, 1, 1, 0], y: -150, scale: 1, rotate: 4 }}
               transition={{ duration: 3.1, ease: "easeOut", times: [0, 0.12, 0.75, 1] }}
             >
-              <span className="w-6 h-6 rounded-full bg-[#fff1e7] text-[#c2410c] inline-flex items-center justify-center">
+              <span className="w-6 h-6 rounded-full bg-[#e9edff] text-[#1f3ad1] inline-flex items-center justify-center">
                 <Icon size={13} />
               </span>
               {t.label}
-              <span className="text-[#15803d] font-semibold">{t.amount}</span>
+              <span className="text-[#0b7a45] font-semibold">{t.amount}</span>
             </motion.div>
           );
         })}
