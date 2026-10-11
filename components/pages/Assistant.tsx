@@ -44,8 +44,9 @@ export function Assistant({ b, act }: { b: Business; act: any }) {
     if (!question || thinking) return;
     const q = question.toLowerCase();
     let shape: OrbShape = "sphere";
-    let answer =
+    const fallback =
       "Your books and inventory are current. Try asking about your best item, profit, low stock, or a price change.";
+    let answer = fallback;
     let next: typeof proposal = null;
     if (q.includes("best")) {
       shape = "bars";
@@ -72,11 +73,26 @@ export function Assistant({ b, act }: { b: Business; act: any }) {
       { shape, hold: 1e9 },
     ]);
     setRun((r) => r + 1);
-    setTimeout(() => {
-      setMessages((m) => [...m, { role: "assistant", text: answer }]);
-      setProposal(next);
-      setThinking(false);
-    }, 1700);
+    // Questions the quick rules can't answer go to the AI with the live books (read-only).
+    const matched = answer !== fallback;
+    const reply: Promise<string> = matched
+      ? Promise.resolve(answer)
+      : fetch("/api/assistant/intent", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: question, businessId: b.id }),
+        })
+          .then((r) => r.json())
+          .then((d) => (typeof d.answer === "string" ? d.answer : answer))
+          .catch(() => answer);
+    const started = Date.now();
+    reply.then((text) => {
+      setTimeout(() => {
+        setMessages((m) => [...m, { role: "assistant", text }]);
+        setProposal(next);
+        setThinking(false);
+      }, Math.max(0, 1700 - (Date.now() - started)));
+    });
   }
 
   // A question typed into the command palette arrives here and is asked once.
