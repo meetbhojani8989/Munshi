@@ -1,10 +1,5 @@
-export type Line={account:string;debit:number;credit:number};
-export type Entry={id:string;date:string;memo:string;source:string;lines:Line[]};
-export type Item={id:string;name:string;category:string;price:number;cost:number;stock:number;reorder:number;units:number};
-export type Sale={id:string;date:string;items:{id:string;name:string;qty:number;price:number;cost:number}[];total:number;channel:string;payment:string};
-export type Invoice={id:string;date:string;vendor:string;items:{id:string;name:string;qty:number;cost:number}[];total:number;paid:boolean};
-export type Suggestion={id:string;action:string;reason:string;impact:number;confidence:number;category:string;itemId?:string;newPrice?:number;status?:string};
-export type Business={id:string;name:string;type:string;eventDay:boolean;cash:number;items:Item[];sales:Sale[];invoices:Invoice[];entries:Entry[];suggestions:Suggestion[];orders:{id:string;channel:string;customer:string;itemId:string;qty:number;status:string}[];experiments:{id:string;itemId:string;price:number;days:number;start:string;status:string}[];outcomes:{id:string;predicted:number;actual:number;lesson:string}[]};
+import type{Business,Line}from'./types';
+export type{Line,Entry,Item,Sale,Invoice,Suggestion,Business}from'./types';
 const today=()=>new Date().toISOString().slice(0,10);
 export function post(b:Business,memo:string,source:string,lines:Line[]){const debit=lines.reduce((s,l)=>s+l.debit,0),credit=lines.reduce((s,l)=>s+l.credit,0);if(Math.abs(debit-credit)>.001)throw Error('Unbalanced entry');b.entries.unshift({id:crypto.randomUUID(),date:today(),memo,source,lines});}
 export function sell(b:Business,ids:{id:string;qty:number}[],payment='Card',channel='In store'){const items=ids.map(x=>{const i=b.items.find(i=>i.id===x.id);if(!i)throw Error('Item not found');if(x.qty<1||x.qty>i.stock)throw Error('Insufficient stock');return{id:i.id,name:i.name,qty:x.qty,price:i.price,cost:i.cost}});const total=items.reduce((s,i)=>s+i.qty*i.price,0),cogs=items.reduce((s,i)=>s+i.qty*i.cost,0);items.forEach(x=>{const i=b.items.find(i=>i.id===x.id)!;i.stock-=x.qty;i.units+=x.qty});b.cash+=total;const sale={id:crypto.randomUUID(),date:today(),items,total,channel,payment};b.sales.unshift(sale);post(b,`Sale ${sale.id.slice(0,6)}`,sale.id,[{account:payment==='Cash'?'Cash':'Card Clearing',debit:total,credit:0},{account:'Sales Revenue',debit:0,credit:total},{account:'Cost of Goods Sold',debit:cogs,credit:0},{account:'Inventory',debit:0,credit:cogs}]);return sale}
