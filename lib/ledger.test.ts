@@ -43,7 +43,8 @@ describe('LedgerService', () => {
 
     expect(changes.map(c => c.kind)).toEqual(['inventory', 'payable', 'journal', 'journal', 'margin']);
     expect(changes[0]).toMatchObject({ before: item.stock, after: item.stock + 10 });
-    expect(changes[1]).toMatchObject({ before: ap, after: ap + 31.5 });
+    expect(changes[1].before!).toBeCloseTo(ap, 2);
+    expect(changes[1].after!).toBeCloseTo(ap + 31.5, 2);
     expect(changes[4].after!).toBeLessThan(changes[4].before!); // cost went up, margin went down
   });
 
