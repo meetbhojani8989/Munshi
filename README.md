@@ -10,6 +10,8 @@ keeps improving the forecasts underneath, on the owner's own books.
 
 Built at **c0mpiled-15, Penn State, Oct 11 2026**.
 
+**Live demo: https://munshi-silk.vercel.app** → *Try demo account*
+
 ---
 
 ## 90-second demo path
@@ -51,6 +53,7 @@ one-step-ahead daily forecasts.
 |---|---|---|
 | Baseline (tomorrow = today) | 31.1% | 28.5% |
 | Champion after 5 rounds | 16.1% | **15.2%: 46.7% lower error** |
+| Second run on the deployed app (starts from remembered lessons) | 14.5% | **11.6%: 59.1% lower error** |
 
 A full 5-round run takes about 90 seconds (3 parallel agents plus a critic per round).
 
@@ -58,6 +61,7 @@ Real lessons the critic wrote during live runs:
 - *"weekdayWeight 0.9 improved accuracy this round; prior lesson said skip it, but keep weighting."*
 - *"trendWeight 0.05 hurt (0.1638); keep trendWeight 0 and avoid ewma."*
 - *"Clip 3.25 remains best; 3.15 and 3.35 matched baseline, so avoid widening clip."*
+- *"Keep trendWeight at or below 0.1; higher trend weights worsened WAPE."*
 
 With no LLM key, the same loop runs as a deterministic local search, so the demo never breaks.
 
