@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ZodError } from 'zod';
+import { auth } from '@/auth';
 import { LedgerService, NotFoundError } from '@/lib/ledger';
 import { handleSquareEvent, UnmappedError, validSquareSignature } from '@/lib/pos';
 
 // POST /api/pos/webhook?businessId= -> PosWebhookResult
 // Called by the point of sale, not by a signed-in user. When SQUARE_WEBHOOK_SIGNATURE_KEY is set, the
-// x-square-hmacsha256-signature header must match; without it the endpoint is open (demo mode).
+// x-square-hmacsha256-signature header must match, unless the caller is signed in (the in-app "Go live" demo);
+// without the key the endpoint is open (demo mode).
 export async function POST(req: NextRequest) {
   const raw = await req.text();
   const key = process.env.SQUARE_WEBHOOK_SIGNATURE_KEY;
-  if (key && !validSquareSignature(key, process.env.SQUARE_WEBHOOK_URL || req.url, raw, req.headers.get('x-square-hmacsha256-signature')))
+  if (key && !validSquareSignature(key, process.env.SQUARE_WEBHOOK_URL || req.url, raw, req.headers.get('x-square-hmacsha256-signature')) && !(await auth()))
     return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
   try {
     let payload: unknown;
