@@ -1,8 +1,9 @@
 node_modules
 .next
-.env.local
 *.tsbuildinfo
 data/*.json
 src-tauri/target
 src-tauri/server
 .DS_Store
+.env*
+!.env.example
