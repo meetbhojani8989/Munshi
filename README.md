@@ -80,7 +80,10 @@ With no LLM key, the same loop runs as a deterministic local search, so the demo
 
 ### AWS
 - **Amazon Textract** `AnalyzeExpense` reads supplier invoices (`lib/ocr.ts`), with on-device OCR as the fallback.
-- **AWS App Monetization** for the $25/month founding plan (in progress).
+- **AWS App Monetization** (private beta) for the **$5/month Founding Owner** plan: two tiers (Free, Founding Owner) metering
+  3 actions per owner (`invoice_scans`, `ai_requests`, `agent_runs`), over-quota blocked. Pricing, metrics and plans were drafted
+  with the AWS monetize skill; creating them was blocked by an AWS Organizations service control policy on the event account, so
+  the launch is pending that permission.
 - **Amazon Pay** Checkout v2 for the founding plan (`lib/payments/amazonpay.ts`).
 
 ### AGI Inc: on-device intelligence
@@ -90,7 +93,7 @@ With no LLM key, the same loop runs as a deterministic local search, so the demo
 
 ### Engineering Entrepreneurship: sales
 Pitch: *"Send me your last month of sales or one supplier invoice, and Munshi shows you which items actually make you
-money and where you're losing it. Founding price: $25/month, first month today."*
+money and where you're losing it. Founding price: $5/month, first month today."*
 
 | Business | Outcome | Proof |
 |---|---|---|
