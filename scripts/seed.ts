@@ -1,0 +1,1 @@
+import{resetBusinesses}from'../lib/store';const businesses=resetBusinesses();for(const b of businesses)console.log(`${b.name}: ${b.items.length} items, ${b.sales.length} sales, ${b.invoices.length} invoices, ${b.entries.length} journal entries`);

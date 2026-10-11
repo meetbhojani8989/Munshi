@@ -1,0 +1,1 @@
+import App from '@/components/App';import{auth}from'@/auth';import{redirect}from'next/navigation';export default async function Page({params}:{params:Promise<{id:string}>}){if(!await auth())redirect('/login');const{id}=await params;return<App page="item" itemId={id}/>}

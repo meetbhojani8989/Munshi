@@ -1,0 +1,1 @@
+import './globals.css';import type{Metadata}from'next';export const metadata:Metadata={title:'Munshi — Every bill updates everything',description:'A calm AI back office for small businesses',manifest:'/manifest.json'};export default function RootLayout({children}:{children:React.ReactNode}){return <html lang="en"><body>{children}</body></html>}

@@ -1,0 +1,1 @@
+import NextAuth from'next-auth';import config from'./auth.config';import{MongoDBAdapter}from'@auth/mongodb-adapter';import{MongoClient}from'mongodb';const uri=process.env.MONGODB_URI;const clientPromise=uri?new MongoClient(uri).connect():undefined;export const{handlers,auth,signIn,signOut}=NextAuth({...config,adapter:clientPromise?MongoDBAdapter(clientPromise):undefined});
