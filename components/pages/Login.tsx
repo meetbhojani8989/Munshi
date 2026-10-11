@@ -1,46 +1,10 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { motion } from "framer-motion";
-import {
-  ArrowRight,
-  Apple,
-  Coffee,
-  Croissant,
-  Pizza,
-  Soup,
-  Salad,
-  Sandwich,
-  IceCreamCone,
-  CupSoda,
-  ReceiptText,
-  Boxes,
-  BookOpen,
-  TrendingUp,
-  ChefHat,
-} from "lucide-react";
-import { Logo } from "@/components/layout/Sidebar";
-import { ThemeToggle } from "@/components/layout/TopBar";
+import { ArrowRight, Apple } from "lucide-react";
+import { Logo, ThemeToggle } from "@/components/layout/Header";
 import { ease } from "@/components/layout/ui";
-import { BorderBeam, FloatingFood, OrbitingCircles, Steam, TicketBurst } from "@/components/fx";
 
-const ticker = [
-  ["SALE", "Iced Latte", "+$5.70"],
-  ["INVOICE", "Centre Dairy", "−$182.40"],
-  ["JOURNAL", "Balanced", "Dr = Cr"],
-  ["SALE", "Chicken Wrap ×2", "+$8.00"],
-  ["STOCK", "Blueberry Muffin", "+24 units"],
-  ["PAYABLE", "Keystone Produce", "−$96.00"],
-  ["SALE", "Matcha Latte", "+$12.50"],
-  ["MARGIN", "Café", "80.2%"],
-];
-const tickets = [
-  { label: "Iced Latte", amount: "+$5.70" },
-  { label: "Chicken Wrap ×2", amount: "+$8.00" },
-  { label: "Tomato Soup", amount: "+$7.40" },
-  { label: "Almond Croissant", amount: "+$15.90" },
-  { label: "Greek Salad", amount: "+$14.20" },
-  { label: "Lemonade", amount: "+$9.10" },
-];
 const headline = ["Every", "bill", "updates", "everything."];
 
 function GoogleMark() {
@@ -54,215 +18,226 @@ function GoogleMark() {
   );
 }
 
-function OrbitDish({ Icon }: { Icon: any }) {
+// A dining table seen from directly above, drawn line by line: first the
+// table, then the chairs and place settings. Then the food is served: real
+// overhead photographs, one dish at a time.
+// Photos are from Unsplash (free licence): personalgraphic.com, David Hunter,
+// Jay Nlper, Alexandra Kusper, Nosh Caterers, David Foodphototasty,
+// Coffee with Joshua.
+const photo = (id: string, crop = "") =>
+  `https://images.unsplash.com/photo-${id}?w=420&h=420&fit=crop&q=80&auto=format${crop}`;
+const seats = [
+  { x: 195, y: 214, side: "top", src: photo("1691480184494-d9f822edd4d1", "&crop=focalpoint&fp-x=0.5&fp-y=0.5&fp-z=1.4") },
+  { x: 405, y: 214, side: "top", src: photo("1603911036147-2f35cce108ef") },
+  { x: 450, y: 300, side: "right", src: photo("1617421753170-46511a8d73fc") },
+  { x: 405, y: 386, side: "bottom", src: photo("1592778024292-d6782d22add7", "&crop=focalpoint&fp-x=0.6&fp-y=0.5&fp-z=1.25") },
+  { x: 195, y: 386, side: "bottom", src: photo("1517306085770-871ff74b2274") },
+  { x: 150, y: 300, side: "left", src: photo("1736680056361-6a2f6e35fa50") },
+] as const;
+const centre = photo("1692737580547-b45bb4a02356");
+const drinks = [
+  { x: 300, y: 200, src: photo("1587982704600-e5f79d652fe5", "&crop=focalpoint&fp-x=0.5&fp-y=0.55&fp-z=2.1") },
+  { x: 300, y: 400, src: photo("1587982708730-ffc82d18e9fc", "&crop=focalpoint&fp-x=0.5&fp-y=0.52&fp-z=2.2") },
+];
+const at = (s: number) => ({ "--d": s + "s" }) as React.CSSProperties;
+
+// One served dish: a round photo with a soft shadow that lands on its plate.
+function Dish({ id, shadow, x, y, r, src, d }: { id: string; shadow: string; x: number; y: number; r: number; src: string; d: number }) {
   return (
-    <span className="w-full h-full rounded-2xl bg-surface border border-line shadow-[var(--shadow)] text-[var(--accent)] inline-flex items-center justify-center">
-      <Icon size={22} strokeWidth={1.8} />
-    </span>
+    <g className="serve" style={at(d)}>
+      <clipPath id={id}>
+        <circle cx={x} cy={y} r={r} />
+      </clipPath>
+      <circle cx={x + 2} cy={y + 5} r={r} fill="#000" opacity={0.28} filter={`url(#${shadow})`} />
+      <image href={src} x={x - r} y={y - r} width={r * 2} height={r * 2} clipPath={`url(#${id})`} preserveAspectRatio="xMidYMid slice" />
+      <circle cx={x} cy={y} r={r} stroke="rgba(255,255,255,.5)" strokeWidth={1} />
+    </g>
   );
 }
 
-// The plate: Munshi at the centre, dishes orbiting, the books orbiting
-// further out, and sales tickets floating off the top.
-function KitchenOrbit() {
+function Chair({ x, y, side, d }: { x: number; y: number; side: string; d: number }) {
+  // seat centre sits just outside the table edge on its side
+  const cx = side === "left" ? 52 : side === "right" ? 548 : x;
+  const cy = side === "top" ? 112 : side === "bottom" ? 488 : y;
+  const flat = side === "top" || side === "bottom";
+  const w = flat ? 70 : 54,
+    h = flat ? 54 : 70;
+  const out = side === "top" || side === "left" ? -1 : 1;
+  const back = flat
+    ? `M ${cx - 33} ${cy + out * 30} Q ${cx} ${cy + out * 44} ${cx + 33} ${cy + out * 30}`
+    : `M ${cx + out * 30} ${cy - 33} Q ${cx + out * 44} ${cy} ${cx + out * 30} ${cy + 33}`;
   return (
-    <div className="relative w-full aspect-square max-w-[560px] mx-auto flex items-center justify-center">
-      <TicketBurst items={tickets} every={1600} className="!inset-x-[10%] !bottom-[40%] !top-0" />
-      <OrbitingCircles radius={130} duration={22} delay={0} className="size-[52px]">
-        <OrbitDish Icon={Coffee} />
-      </OrbitingCircles>
-      <OrbitingCircles radius={130} duration={22} delay={7.3} className="size-[52px]" path={false}>
-        <OrbitDish Icon={Croissant} />
-      </OrbitingCircles>
-      <OrbitingCircles radius={130} duration={22} delay={14.6} className="size-[52px]" path={false}>
-        <OrbitDish Icon={Soup} />
-      </OrbitingCircles>
-      <OrbitingCircles radius={225} duration={34} reverse delay={0} className="size-[58px]">
-        <OrbitDish Icon={Pizza} />
-      </OrbitingCircles>
-      <OrbitingCircles radius={225} duration={34} reverse delay={8.5} className="size-[58px]" path={false}>
-        <OrbitDish Icon={Salad} />
-      </OrbitingCircles>
-      <OrbitingCircles radius={225} duration={34} reverse delay={17} className="size-[58px]" path={false}>
-        <OrbitDish Icon={Sandwich} />
-      </OrbitingCircles>
-      <OrbitingCircles radius={225} duration={34} reverse delay={25.5} className="size-[58px]" path={false}>
-        <OrbitDish Icon={IceCreamCone} />
-      </OrbitingCircles>
-      <OrbitingCircles radius={130} duration={22} delay={3.6} className="size-[40px]" path={false}>
-        <span className="w-full h-full rounded-full bg-gold text-white inline-flex items-center justify-center shadow-[var(--shadow)]">
-          <CupSoda size={17} />
-        </span>
-      </OrbitingCircles>
+    <g style={at(d)}>
+      <rect pathLength={1} x={cx - w / 2} y={cy - h / 2} width={w} height={h} rx={14} />
+      <path pathLength={1} d={back} strokeWidth={4} />
+    </g>
+  );
+}
 
-      {/* the plate */}
-      <motion.div
-        className="absolute inset-0 m-auto w-[180px] h-[180px] rounded-full flex items-center justify-center"
-        initial={{ scale: 0.6, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: "spring", stiffness: 140, damping: 14, delay: 0.3 }}
-      >
-        <span className="absolute inset-0 rounded-full bg-surface border border-line shadow-[var(--shadow-lg)]" />
-        <span className="absolute inset-[14px] rounded-full border border-dashed border-line-strong" />
-        <motion.span
-          className="absolute inset-[-14px] rounded-full border-2 border-[var(--accent)] border-t-transparent border-l-transparent"
-          animate={{ rotate: 360 }}
-          transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
-        />
-        <span className="relative flex flex-col items-center text-[var(--accent)]">
-          <Steam className="-top-7 text-[var(--accent)] opacity-70" />
-          <ChefHat size={46} strokeWidth={1.6} />
-          <span className="display font-bold text-[var(--ink)] mt-1">Munshi</span>
-        </span>
-      </motion.div>
+function Setting({ x, y, side, d }: { x: number; y: number; side: string; d: number }) {
+  const flat = side === "top" || side === "bottom";
+  return (
+    <g style={at(d)}>
+      <circle pathLength={1} cx={x} cy={y} r={46} />
+      {[-1, 1].map((k) =>
+        flat ? (
+          <line key={k} pathLength={1} x1={x + k * 56} y1={y - 20} x2={x + k * 56} y2={y + 20} />
+        ) : (
+          <line key={k} pathLength={1} x1={x - 20} y1={y + k * 56} x2={x + 20} y2={y + k * 56} />
+        ),
+      )}
+    </g>
+  );
+}
 
-      {/* books the plate feeds, floating at the corners */}
-      {[
-        { Icon: Boxes, label: "Pantry", value: "+44 units", cls: "left-0 top-[14%]" },
-        { Icon: ReceiptText, label: "Payables", value: "+$182.40", cls: "right-0 top-[24%]" },
-        { Icon: BookOpen, label: "Journal", value: "Dr = Cr ✓", cls: "left-[2%] bottom-[14%]" },
-        { Icon: TrendingUp, label: "Margin", value: "80.2%", cls: "right-[2%] bottom-[8%]" },
-      ].map((c, i) => (
-        <motion.div
-          key={c.label}
-          className={"absolute " + c.cls}
-          initial={{ opacity: 0, y: 20, scale: 0.8 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ delay: 0.8 + i * 0.15, type: "spring", stiffness: 200, damping: 16 }}
-        >
-          <div
-            className="animate-float card !p-3 !rounded-2xl flex items-center gap-3 shadow-[var(--shadow-lg)]"
-            style={{ "--dur": 5 + i, "--rot": `${i % 2 ? 2 : -2}deg` } as React.CSSProperties}
-          >
-            <span className="w-9 h-9 rounded-xl bg-[var(--accent-soft)] text-[var(--accent-text)] inline-flex items-center justify-center">
-              <c.Icon size={16} />
-            </span>
-            <div>
-              <div className="text-[11px] muted">{c.label}</div>
-              <div className="mono text-[13px] font-medium">{c.value}</div>
-            </div>
-          </div>
-        </motion.div>
-      ))}
+function TableScene({ className = "" }: { className?: string }) {
+  // On a fresh load the loading curtain is still up, so hold the drawing
+  // until it lifts; arriving from inside the app starts straight away.
+  const uid = useId().replace(/:/g, "");
+  const [base, setBase] = useState<number | null>(null);
+  useEffect(() => setBase(performance.now() < 2500 ? 1.7 : 0), []);
+  if (base === null) return <div aria-hidden className={"aspect-[584/496] " + className} />;
+  const delay = (s: number) => ({ "--d": base + s + "s" }) as React.CSSProperties;
+  return (
+    <div
+      aria-hidden
+      className={"table-shot " + className}
+      style={{ animationDelay: `${base}s, ${base + 4.2}s` }}
+    >
+      <svg viewBox="8 52 584 496" className="w-full h-auto overflow-visible" fill="none" strokeLinecap="round" strokeLinejoin="round">
+        <g className="draw" stroke="var(--line-strong)" strokeWidth={1.6}>
+          {/* table */}
+          <g style={{ ...delay(0.3), "--dur": "1.8s" } as React.CSSProperties}>
+            <rect pathLength={1} x={90} y={150} width={420} height={300} rx={38} strokeWidth={2.4} />
+          </g>
+          <g style={{ ...delay(0.9), "--dur": "1.6s" } as React.CSSProperties}>
+            <rect pathLength={1} x={104} y={164} width={392} height={272} rx={28} />
+          </g>
+          {seats.map((s, i) => (
+            <Chair key={"c" + i} {...s} d={base + 1.5 + i * 0.16} />
+          ))}
+          {seats.map((s, i) => (
+            <Setting key={"s" + i} {...s} d={base + 2.5 + i * 0.16} />
+          ))}
+          {/* serving platter in the middle */}
+          <g style={delay(3.4)}>
+            <circle pathLength={1} cx={300} cy={300} r={62} />
+          </g>
+        </g>
+        {/* the food is served, one dish at a time */}
+        <defs>
+          <filter id={uid + "shadow"} x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="5" />
+          </filter>
+        </defs>
+        {seats.map(({ x, y, src }, i) => (
+          <Dish key={i} shadow={uid + "shadow"} id={uid + "dish" + i} x={x} y={y} r={41} src={src} d={base + 4 + i * 0.42} />
+        ))}
+        <Dish shadow={uid + "shadow"} id={uid + "centre"} x={300} y={300} r={57} src={centre} d={base + 4 + seats.length * 0.42} />
+        {drinks.map((k, i) => (
+          <Dish key={i} shadow={uid + "shadow"} id={uid + "drink" + i} {...k} r={19} d={base + 4.6 + (seats.length + i) * 0.42} />
+        ))}
+      </svg>
     </div>
   );
 }
 
-export function Login({ login }: { login: (provider?: string) => void }) {
+export function Login({
+  login,
+}: {
+  login: (provider?: string, next?: string) => void;
+}) {
   const [busy, setBusy] = useState("");
-  const go = async (p?: string) => {
-    setBusy(p || "demo");
+  const go = async (id: string, provider?: string, next?: string) => {
+    setBusy(id);
     try {
-      await login(p);
+      await login(provider, next);
     } finally {
       setBusy("");
     }
   };
   return (
-    <div className="relative min-h-screen bg-[var(--bg)] flex flex-col overflow-hidden">
-      <FloatingFood dim className="opacity-60 lg:opacity-100" />
-      <header className="relative z-10 flex items-center justify-between px-6 md:px-12 h-20">
-        <span className="flex items-center gap-3 text-lg font-bold display tracking-tight">
-          <Logo /> Munshi
+    <div className="min-h-screen flex flex-col">
+      <header className="flex items-center justify-between px-5 md:px-10 h-20">
+        <span className="flex items-center gap-3 text-xl font-extrabold tracking-tight">
+          <Logo size={40} /> Munshi
         </span>
-        <div className="flex items-center gap-3">
-          <span className="tag desktop">
-            <span className="live-dot" /> Built for restaurants & cafés
-          </span>
-          <ThemeToggle />
-        </div>
+        <ThemeToggle />
       </header>
 
-      <main className="relative z-10 flex-1 grid lg:grid-cols-[1fr_1fr] gap-6 items-center px-6 md:px-12 pb-10 max-w-[1440px] w-full mx-auto">
+      <main className="flex-1 grid lg:grid-cols-[1fr_1.15fr] gap-8 items-center px-5 md:px-10 pb-12 max-w-[1320px] w-full mx-auto">
         <div>
-          <motion.div className="tag tag-accent mb-7" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-            <ChefHat size={13} /> The back office for food businesses
+          <TableScene className="lg:hidden max-w-[320px] mx-auto -mt-4 mb-2" />
+          <motion.div
+            className="flex items-center gap-2.5 text-sm font-bold text-[var(--accent-text)] mb-5"
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+          >
+            <span className="h-[3px] w-7 rounded-full bg-current" />
+            The AI back office for small business
           </motion.div>
-          <h1 aria-label="Every bill updates everything." className="!text-[clamp(48px,7vw,104px)] !leading-[0.95] !tracking-[-0.045em] !font-extrabold">
+          <h1
+            aria-label="Every bill updates everything."
+            className="!text-[clamp(52px,8vw,118px)] !leading-[0.92] !tracking-[-0.055em] !font-extrabold"
+            style={{ perspective: 900 }}
+          >
             {headline.map((w, i) => (
-              <span key={w} aria-hidden className="inline-block overflow-hidden align-bottom pb-[0.1em] -mb-[0.1em] mr-[0.22em]">
-                <motion.span
-                  className={"inline-block " + (w === "updates" ? "text-[var(--accent)]" : "")}
-                  initial={{ y: "110%", rotate: 6 }}
-                  animate={{ y: 0, rotate: 0 }}
-                  transition={{ duration: 0.9, ease, delay: 0.15 + i * 0.09 }}
-                >
-                  {w === "updates" ? (
-                    <span className="relative">
-                      updates
-                      <motion.svg
-                        className="absolute left-0 -bottom-[0.12em] w-full h-[0.3em] text-[var(--gold)]"
-                        viewBox="0 0 300 20"
-                        preserveAspectRatio="none"
-                        aria-hidden
-                      >
-                        <motion.path
-                          d="M2 14 C 60 2, 120 20, 180 10 S 280 4, 298 12"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="5"
-                          strokeLinecap="round"
-                          initial={{ pathLength: 0 }}
-                          animate={{ pathLength: 1 }}
-                          transition={{ duration: 0.9, delay: 1.1, ease }}
-                        />
-                      </motion.svg>
-                    </span>
-                  ) : (
-                    w
-                  )}
-                </motion.span>
-              </span>
+              <motion.span
+                key={w}
+                aria-hidden
+                className={"inline-block mr-[0.18em] origin-bottom " + (i === 3 ? "serif" : "")}
+                initial={{ opacity: 0, y: 60, rotateX: 70 }}
+                animate={{ opacity: 1, y: 0, rotateX: 0 }}
+                transition={{ duration: 0.95, ease, delay: 0.2 + i * 0.11 }}
+              >
+                {w}
+              </motion.span>
             ))}
           </h1>
           <motion.p
             className="text-lg md:text-xl muted mt-7 max-w-md leading-relaxed"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.6, ease }}
-          >
-            Your till, your pantry and your books in one calm kitchen. Snap a supplier bill and the whole restaurant updates itself.
-          </motion.p>
-          <motion.div
-            className="flex flex-col sm:flex-row gap-3 mt-10 max-w-lg"
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.75, ease }}
           >
-            <button className="btn !h-12 !px-6 group flex-1 relative overflow-hidden" disabled={!!busy} onClick={() => go()}>
-              <BorderBeam size={80} duration={4} colorFrom="#fff7ed" colorTo="#facc15" />
-              {busy === "demo" ? "Opening the kitchen…" : "Try the demo café"}
-              <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+            Sales, stock and books in one place. Scan a supplier bill and Munshi
+            updates all three, then tells you what to do next.
+          </motion.p>
+          <motion.div
+            className="mt-9 max-w-lg"
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: "spring", stiffness: 160, damping: 20, delay: 0.9 }}
+          >
+            <button
+              className="btn w-full !h-14 !text-base group"
+              disabled={!!busy}
+              onClick={() => go("start", undefined, "/onboarding")}
+            >
+              {busy === "start" ? "Setting up…" : "Set up my business"}
+              <ArrowRight size={17} className="transition-transform group-hover:translate-x-1" />
             </button>
-            <button className="btn2 !h-12" disabled={!!busy} onClick={() => go("apple")} aria-label="Continue with Apple">
-              <Apple size={16} /> Apple
-            </button>
-            <button className="btn2 !h-12" disabled={!!busy} onClick={() => go("google")} aria-label="Continue with Google">
-              <GoogleMark /> Google
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              <button className="btn2 !h-[52px]" disabled={!!busy} onClick={() => go("apple", "apple", "/onboarding")}>
+                <Apple size={16} /> Continue with Apple
+              </button>
+              <button className="btn2 !h-[52px]" disabled={!!busy} onClick={() => go("google", "google", "/onboarding")}>
+                <GoogleMark /> Continue with Google
+              </button>
+            </div>
+            <button
+              className="mt-5 text-sm font-bold text-[var(--accent-text)] inline-flex items-center gap-1.5 group"
+              disabled={!!busy}
+              onClick={() => go("demo")}
+            >
+              {busy === "demo" ? "Opening the demo…" : "Just looking? Open the demo account"}
+              <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
             </button>
           </motion.div>
-          <motion.p className="text-xs muted mt-5" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }}>
-            Demo opens a café and a retail shop with 90 days of service.
-          </motion.p>
         </div>
-
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1, ease, delay: 0.2 }}>
-          <KitchenOrbit />
-        </motion.div>
+        <TableScene className="hidden lg:block max-w-[760px] w-full mx-auto" />
       </main>
-
-      <div className="relative z-10 border-t border-line overflow-hidden py-3 bg-[var(--bg)]" aria-hidden>
-        <div className="marquee flex w-max gap-10 mono text-xs">
-          {[...ticker, ...ticker].map(([k, a, v], i) => (
-            <span key={i} className="flex items-center gap-3 whitespace-nowrap">
-              <span className="tag tag-accent !py-0 !px-2 !text-[10px]">{k}</span>
-              <span className="muted">{a}</span>
-              <span>{v}</span>
-              <span className="muted">/</span>
-            </span>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

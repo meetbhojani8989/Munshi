@@ -18,7 +18,7 @@ const schemas = {
   Business: new Schema({
     id: { type: String, required: true, unique: true }, seq: { type: Number, default: 0 }, ownerId: Schema.Types.ObjectId,
     name: String, type: String, address: String, currency: String, eventDay: Boolean, cash: Number,
-    suggestions: mixedList, orders: mixedList, experiments: mixedList, outcomes: mixedList,
+    suggestions: mixedList, orders: mixedList, experiments: mixedList, outcomes: mixedList, staff: mixedList, payruns: mixedList,
   }, opts),
   Item: new Schema({ ...owned, name: String, category: String, price: Number, cost: Number, stock: Number, reorder: Number, units: Number, unit: String }, opts),
   Invoice: new Schema({ ...owned, vendor: String, vendorId: Schema.Types.ObjectId, date: String, items: [line], imageUrl: String, tax: Number, total: Number, paid: Boolean }, opts),

@@ -44,7 +44,7 @@ export function Orders({ b, act }: { b: Business; act: any }) {
                   </motion.span>
                 </div>
                 {/* the steel rail */}
-                <div className="relative h-3 rounded-full bg-gradient-to-b from-[#e7e2dc] to-[#bdb4aa] dark:from-[#3a332e] dark:to-[#1f1a17] shadow-inner mb-1" />
+                <div className="relative h-3 rounded-full bg-[var(--ink)] shadow-[0_6px_14px_-6px_rgba(0,0,0,.6)] mb-1" />
                 <div className="space-y-4 pt-1">
                   <AnimatePresence>
                     {list.map((o, i) => {
@@ -56,42 +56,47 @@ export function Orders({ b, act }: { b: Business; act: any }) {
                           key={o.id}
                           layoutId={"ticket-" + o.id}
                           initial={{ rotate: -14, y: -30, opacity: 0 }}
-                          animate={{ rotate: i % 2 ? 1.5 : -1.5, y: 0, opacity: 1 }}
-                          exit={{ opacity: 0, scale: 0.9 }}
-                          whileHover={{ rotate: 0, y: -4 }}
-                          transition={{ type: "spring", stiffness: 260, damping: 14 }}
+                          animate={{ rotate: i % 2 ? [1.8, -1, 1.8] : [-1.8, 1, -1.8], y: 0, opacity: 1 }}
+                          exit={{ opacity: 0, y: 60, rotate: 12 }}
+                          whileHover={{ rotate: 0, y: -6, scale: 1.02 }}
+                          transition={{
+                            type: "spring",
+                            stiffness: 260,
+                            damping: 14,
+                            rotate: { duration: 5 + i, repeat: Infinity, ease: "easeInOut" },
+                          }}
                           style={{ transformOrigin: "50% 0%" }}
                           className="relative"
                         >
                           {/* clip */}
-                          <span className="absolute -top-3 left-1/2 -translate-x-1/2 w-10 h-5 rounded-md bg-gradient-to-b from-[#d6cfc7] to-[#9d948a] dark:from-[#4a413a] dark:to-[#2a231f] z-10 shadow" />
-                          <div className="relative bg-white text-[#1c1410] rounded-b-md shadow-[var(--shadow-lg)] pt-5 pb-4 px-4 mono text-[12px] [mask:radial-gradient(6px_at_6px_100%,#0000_98%,#000)_-6px_0/12px_100%_repeat-x]">
+                          <span className="absolute -top-3 left-1/2 -translate-x-1/2 w-10 h-5 rounded-md bg-[var(--surface-3)] border border-line z-10 shadow" />
+                          <div className="relative bg-white text-[#16161a] rounded-b-md shadow-[var(--shadow-lg)] pt-5 pb-4 px-4 mono text-[12px] [mask:radial-gradient(6px_at_6px_100%,#0000_98%,#000)_-6px_0/12px_100%_repeat-x]">
                             <div className="flex justify-between items-center">
                               <span className="font-semibold">#{o.id.slice(-4).toUpperCase()}</span>
-                              <span className="inline-flex items-center gap-1 text-[#6b5d53]">
+                              <span className="inline-flex items-center gap-1 text-[#6b6b72]">
                                 <Icon size={12} /> {o.channel}
                               </span>
                             </div>
-                            <div className="border-t border-dashed border-[#ddd2c7] my-3" />
+                            <div className="border-t border-dashed border-[#c9c9cf] my-3" />
                             <div className="flex items-center gap-3">
-                              <span className="relative text-[#c2410c]">
+                              <span className="relative text-[var(--hero)]">
                                 {status === "Preparing" && <Steam className="-top-5 left-1/2 -translate-x-1/2" />}
-                                <DishBadge name={item} size={36} className="!bg-[#fff1e7] !text-[#c2410c]" />
+                                <DishBadge name={item} size={36} className="!bg-[color-mix(in_oklch,var(--hero)_12%,white)] !text-[var(--hero)]" />
                               </span>
                               <div className="min-w-0">
                                 <div className="font-sans text-sm font-semibold truncate">
                                   {o.qty} × {item}
                                 </div>
-                                <div className="text-[#6b5d53] truncate">for {o.customer}</div>
+                                <div className="text-[#6b6b72] truncate">for {o.customer}</div>
                               </div>
                             </div>
-                            <div className="flex items-center gap-1.5 mt-3 text-[11px] text-[#6b5d53]">
-                              {status === "Preparing" ? <Flame size={12} className="text-[#ea580c]" /> : <Clock size={12} />}
+                            <div className="flex items-center gap-1.5 mt-3 text-[11px] text-[#6b6b72]">
+                              {status === "Preparing" ? <Flame size={12} className="text-[var(--hero)]" /> : <Clock size={12} />}
                               {status === "New" ? "Fired just now" : status === "Preparing" ? "On the grill" : status === "Ready" ? "Waiting at the pass" : "Handed over"}
                             </div>
                             {status !== "Done" ? (
                               <button
-                                className="font-sans mt-3 w-full h-9 rounded-lg bg-[#c2410c] text-white text-xs font-semibold inline-flex items-center justify-center gap-1.5 hover:bg-[#9a3412] transition-colors group"
+                                className="font-sans mt-3 w-full h-9 rounded-lg bg-[var(--hero)] text-white text-xs font-semibold inline-flex items-center justify-center gap-1.5 hover:bg-[var(--hero-2)] transition-colors group"
                                 onClick={() =>
                                   act(
                                     "order",
@@ -104,10 +109,18 @@ export function Orders({ b, act }: { b: Business; act: any }) {
                                 <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
                               </button>
                             ) : (
-                              <div className="font-sans text-xs text-[#15803d] mt-3 flex items-center gap-1.5 font-semibold">
+                              <div className="font-sans text-xs text-[#0b7a45] mt-3 flex items-center gap-1.5 font-semibold">
                                 <CheckCheck size={14} /> Posted to books
                               </div>
                             )}
+                            <div
+                              aria-hidden
+                              className="mt-3 h-5 opacity-70"
+                              style={{
+                                background:
+                                  "repeating-linear-gradient(90deg,#16161a 0 2px,transparent 2px 5px,#16161a 5px 6px,transparent 6px 10px,#16161a 10px 13px,transparent 13px 15px)",
+                              }}
+                            />
                           </div>
                         </motion.div>
                       );

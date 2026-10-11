@@ -18,6 +18,7 @@ import {
   ConciergeBell,
   Refrigerator,
   ChefHat,
+  HandCoins,
 } from "lucide-react";
 
 // Every routable page: [path, label, icon].
@@ -25,11 +26,12 @@ export const nav = [
   ["dashboard", "Today", LayoutDashboard],
   ["sales", "Sales", ReceiptText],
   ["orders", "Online orders", ShoppingBag],
-  ["inventory", "Pantry stock", Boxes],
+  ["inventory", "Stock", Boxes],
   ["scan", "Scan invoice", ScanLine],
   ["vendors", "Vendors", Truck],
   ["books", "Books", BookOpen],
   ["valuation", "Valuation", ChartColumnIncreasing],
+  ["payroll", "Payroll", HandCoins],
   ["analytics", "Analytics", ChartNoAxesCombined],
   ["insights", "Insights", Sparkles],
   ["lab", "Pricing Lab", FlaskConical],
@@ -38,17 +40,19 @@ export const nav = [
   ["settings", "Settings", Settings],
 ] as const;
 
-// The rail shows five workspaces; each workspace's pages become header tabs.
+// The dock shows four workspaces; the active one unfolds into its pages.
+// Scanning lives at the top of Pantry and Ask Munshi is the dock's orb, so
+// neither appears as a tab.
 export const workspaces = [
-  { key: "overview", label: "Overview", icon: Gauge, pages: ["dashboard"] },
+  { key: "overview", label: "Today", icon: Gauge, pages: ["dashboard"] },
   { key: "sales", label: "Service", icon: ConciergeBell, pages: ["sales", "orders"] },
-  { key: "stock", label: "Pantry", icon: Refrigerator, pages: ["inventory", "scan", "vendors"] },
-  { key: "finance", label: "Finance", icon: Landmark, pages: ["books", "valuation"] },
-  { key: "intel", label: "Menu IQ", icon: ChefHat, pages: ["analytics", "insights", "lab", "scorecard", "assistant"] },
+  { key: "stock", label: "Pantry", icon: Refrigerator, pages: ["inventory", "vendors"] },
+  { key: "finance", label: "Money", icon: Landmark, pages: ["books", "payroll", "valuation"] },
+  { key: "intel", label: "Insight", icon: ChefHat, pages: ["insights", "analytics", "lab", "scorecard"] },
 ] as const;
 
 export function workspaceOf(page: string) {
-  if (page === "item") return workspaces[2];
+  if (page === "item" || page === "scan") return workspaces[2];
   return workspaces.find((w) => (w.pages as readonly string[]).includes(page));
 }
 
