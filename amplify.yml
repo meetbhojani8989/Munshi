@@ -1,0 +1,21 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - nvm use 20 || true
+        - export MONGOMS_DISABLE_POSTINSTALL=1
+        - npm ci --no-audit --no-fund
+    build:
+      commands:
+        # Amplify exposes console env vars only at build time; Next.js server code reads them from .env.production.
+        - env | grep -E '^(LLM_|MONGODB_URI|AUTH_|MUNSHI_|NEXT_PUBLIC_|AMAZON_PAY_|SQUARE_)' >> .env.production || true
+        - npm run build
+  artifacts:
+    baseDirectory: .next
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - node_modules/**/*
+      - .next/cache/**/*
