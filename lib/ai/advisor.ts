@@ -1,7 +1,7 @@
 // AdvisorService: turns an analytics context into owner-ready suggestions.
 // Output is strict JSON validated with zod. Every suggestion carries a dollar
 // impact and requires owner approval before anything changes.
-import{createLlmClient,type LlmClient,type ChatMessage}from'./llm';
+import{createLlmClient,parseJson,type LlmClient,type ChatMessage}from'./llm';
 import{
   type AnalyticsContext,
   type Suggestion,
@@ -80,8 +80,15 @@ export class AdvisorService{
       {role:'system',content:SYSTEM_PROMPT},
       {role:'user',content:JSON.stringify(context)},
     ];
-    const content=await this.client.complete(messages,{json:true});
-    const parsed=rawSuggestionListSchema.parse(JSON.parse(content));
+    let parsed;
+    try{
+      const content=await this.client.complete(messages,{json:true});
+      parsed=rawSuggestionListSchema.parse(parseJson(content));
+    }catch(e){
+      // Never leave the owner with an empty screen: fall back to the deterministic advisor.
+      console.error('Advisor LLM failed, using deterministic advice:',e);
+      return mockSuggestions(context);
+    }
     const known=new Set(context.items.map(i=>i.id));
     return parsed.suggestions
       // Drop hallucinated item ids so approvals never target a missing item.

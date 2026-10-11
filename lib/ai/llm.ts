@@ -30,13 +30,33 @@ class OpenAICompatibleClient implements LlmClient{
         ...(options.json?{response_format:{type:'json_object'}}:{}),
       }),
     });
-    if(!response.ok)throw new Error(`LLM request failed (${response.status})`);
+    if(!response.ok){
+      // Some hosted models reject response_format; retry once without it.
+      if(options.json&&response.status===400)return this.complete(messages,{...options,json:false});
+      throw new Error(`LLM request failed (${response.status})`);
+    }
     const data=await response.json();
     const content=data?.choices?.[0]?.message?.content;
     if(typeof content!=='string')throw new Error('LLM returned an empty response');
-    return content;
+    return stripReasoning(content);
   }
 }
+
+// Reasoning models (DeepSeek R1, GLM) wrap answers in <think> blocks or code fences.
+export function stripReasoning(text:string):string{
+  return text.replace(/<think>[\s\S]*?<\/think>/g,'').replace(/^\s*```(?:json)?\s*/i,'').replace(/\s*```\s*$/,'').trim();
+}
+
+/** Parse the first JSON object in a model reply. */
+export function parseJson<T=unknown>(text:string):T{
+  const clean=stripReasoning(text);
+  try{return JSON.parse(clean)}catch{}
+  const start=clean.indexOf('{'),end=clean.lastIndexOf('}');
+  if(start>=0&&end>start)return JSON.parse(clean.slice(start,end+1));
+  throw new Error('Model did not return JSON');
+}
+
+export function modelName():string{return process.env.LLM_MODEL||'deterministic-mock'}
 
 // Deterministic so tests and demos are reproducible: the same prompt always
 // yields the same answer, and JSON requests get a parseable object back.

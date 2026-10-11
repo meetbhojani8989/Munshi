@@ -8,6 +8,7 @@ import {
 } from "recharts";
 import type { Business } from "@/lib/core";
 import { Title, Card, money } from "@/components/layout/ui";
+import { AgentArena } from "@/components/pages/AgentArena";
 
 export function Scorecard({ b }: { b: Business }) {
   const accuracy = Math.round(
@@ -17,10 +18,14 @@ export function Scorecard({ b }: { b: Business }) {
       b.outcomes.length) *
       100,
   );
-  const chart = b.outcomes.map((o, i) => ({
-    name: `#${i + 1}`,
-    accuracy: 60 + Math.round(i * 2.3),
-  }));
+  // Running accuracy, oldest call first: the share of calls so far within 30% of the actual result.
+  const chart = b.outcomes.map((o, i) => {
+    const sofar = b.outcomes.slice(0, i + 1);
+    const right = sofar.filter(
+      (x) => Math.abs(x.actual - x.predicted) / x.predicted < 0.3,
+    ).length;
+    return { name: `#${i + 1}`, accuracy: Math.round((right / sofar.length) * 100) };
+  });
   return (
     <>
       <Title
@@ -28,6 +33,7 @@ export function Scorecard({ b }: { b: Business }) {
         title="Prediction Scorecard"
         sub="Munshi grades its recommendations against actual results."
       />
+      <AgentArena b={b} />
       <div className="grid md:grid-cols-[1fr_2fr] gap-5 mb-5">
         <Card>
           <div className="muted text-sm">Overall accuracy</div>
@@ -43,7 +49,7 @@ export function Scorecard({ b }: { b: Business }) {
             <ResponsiveContainer>
               <LineChart data={chart}>
                 <XAxis dataKey="name" />
-                <YAxis domain={[50, 100]} />
+                <YAxis domain={[0, 100]} unit="%" />
                 <Tooltip />
                 <Line dataKey="accuracy" stroke="#16845e" strokeWidth={3} />
               </LineChart>
@@ -68,8 +74,9 @@ export function Scorecard({ b }: { b: Business }) {
               {b.outcomes.map((o, i) => (
                 <tr key={o.id}>
                   <td>
-                    {["Pricing", "Stock", "Hours", "Promotion"][i % 4]}{" "}
-                    recommendation
+                    {o.action ??
+                      `${["Pricing", "Stock", "Hours", "Promotion"][i % 4]} recommendation`}
+                    {o.category && <div className="text-xs muted">{o.category}</div>}
                   </td>
                   <td>{money(o.predicted)}</td>
                   <td>{money(o.actual)}</td>

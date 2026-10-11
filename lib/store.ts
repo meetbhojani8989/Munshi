@@ -3,7 +3,9 @@ import path from 'node:path';
 import { seed, type Business } from './core';
 
 // ---- Local store: businesses held in memory and mirrored to a JSON file ----
-const file = process.env.MUNSHI_DATA_FILE || path.join(process.cwd(), 'data', 'businesses.json');
+// Serverless hosts (Vercel, Amplify, Lambda) only allow writes under /tmp.
+const serverless = !!(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+const file = process.env.MUNSHI_DATA_FILE || path.join(serverless ? '/tmp' : process.cwd(), 'data', 'businesses.json');
 let cache: Business[] | null = null;
 let cachedAt = 0; // mtime of the file the cache was read from or written to
 const mtime = () => { try { return fs.statSync(file).mtimeMs; } catch { return 0; } };

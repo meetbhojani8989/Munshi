@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { Business } from "@/lib/core";
 import { Title, Card, usd, money } from "@/components/layout/ui";
 
@@ -11,12 +12,24 @@ export function Insights({
   leak: number;
 }) {
   const suggestions = b.suggestions.filter((s) => !s.status);
+  const [thinking, setThinking] = useState(false);
+  const soup = b.items.find((i) => /soup/i.test(i.name)) ?? b.items[10];
+  async function refresh() {
+    setThinking(true);
+    await act("insights", {}, "Munshi re-read your books and wrote fresh advice.");
+    setThinking(false);
+  }
   return (
     <>
       <Title
         kicker="The AI manager"
         title="Good decisions, in dollars"
         sub="Every recommendation has a reason, a prediction, and your approval gate."
+        action={
+          <button className="btn" disabled={thinking} onClick={refresh}>
+            {thinking ? "Reading your books…" : "Get fresh advice"}
+          </button>
+        }
       />
       <Card className="mb-5 bg-[#fff9e8]">
         <div className="text-xs uppercase tracking-widest text-amber font-bold">
@@ -24,8 +37,9 @@ export function Insights({
         </div>
         <h2 className="mt-2">{usd(leak)} a week is slipping away</h2>
         <p className="mt-2 text-sm">
-          {b.items[11].name} sells out early on busy days. Three slow items also
-          tie up stock. Review the fixes below.
+          {soup.name} stops selling around 8 PM, but you stay open until 10 PM.
+          Evening guests who want it walk out, and three slow items tie up stock
+          on the shelf. Review the fixes below.
         </p>
       </Card>
       <div className="grid md:grid-cols-2 gap-5">

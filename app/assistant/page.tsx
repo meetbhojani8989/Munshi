@@ -1,12 +1,9 @@
-import{redirect}from'next/navigation';
+import App from '@/components/App';
 import{auth}from'@/auth';
-import TopBar from'@/components/ai/TopBar';
-import AssistantView from'@/components/ai/AssistantView';
+import{redirect}from'next/navigation';
 
-export default async function AssistantPage(){
+// Renders inside the main shell like every other page (see app/[page]/page.tsx).
+export default async function Page(){
   if(!await auth())redirect('/login');
-  return <div className="min-h-screen">
-    <TopBar/>
-    <main className="main p-8 md:p-10 max-w-7xl mx-auto"><AssistantView/></main>
-  </div>;
+  return <App page="assistant"/>;
 }
