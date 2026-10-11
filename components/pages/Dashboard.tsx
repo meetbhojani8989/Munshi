@@ -3,22 +3,26 @@ import { CircleDollarSign, ArrowUpRight } from "lucide-react";
 import type { Business } from "@/lib/core";
 import { metrics } from "@/lib/core";
 import { money, usd, signed, Card, Title } from "@/components/layout/ui";
+import { Flash, LiveSalesPanel, type Live } from "./LiveSales";
 
 export function Dashboard({
   b,
   m,
   leak,
   act,
+  live,
 }: {
   b: Business;
   m: ReturnType<typeof metrics>;
   leak: number;
   act: any;
+  live: Live;
 }) {
   const today = new Date().toISOString().slice(0, 10);
   const todays = b.sales
     .filter((x) => x.date === today)
     .reduce((s, x) => s + x.total, 0);
+  const units = b.items.reduce((s, i) => s + i.stock, 0);
   const top = b.items.slice().sort((a, c) => c.units - a.units);
   const health = Math.min(
     98,
@@ -74,14 +78,23 @@ export function Dashboard({
       </div>
       <div className="gridstats mb-5">
         {[
-          ["Today’s sales", signed(todays)],
+          ["Today’s sales", <Flash value={todays}>{signed(todays)}</Flash>],
           [
             "Gross margin",
             <span className="positive">{Math.round(m.margin * 100)}%</span>,
           ],
-          ["Cash on hand", signed(b.cash)],
+          ["Cash on hand", <Flash value={b.cash}>{signed(b.cash)}</Flash>],
           ["Payables due", <span className="negative">{usd(m.payables)}</span>],
-          ["Low stock", <span className="text-amber">{m.low} items</span>],
+          [
+            "Units in stock",
+            <Flash value={units}>{units.toLocaleString("en-US")}</Flash>,
+          ],
+          [
+            "Low stock",
+            <Flash value={m.low}>
+              <span className="text-amber">{m.low} items</span>
+            </Flash>,
+          ],
         ].map(([a, v]) => (
           <Card key={String(a)}>
             <div className="text-sm muted mb-2">{a}</div>
@@ -89,6 +102,7 @@ export function Dashboard({
           </Card>
         ))}
       </div>
+      <LiveSalesPanel b={b} live={live} />
       <div className="grid lg:grid-cols-2 gap-5">
         <Card>
           <div className="flex justify-between">

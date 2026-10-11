@@ -13,6 +13,7 @@ import { CascadeToast } from "@/components/layout/CascadeToast";
 import { VoiceButton, VoiceModal } from "@/components/layout/Voice";
 import { Login } from "@/components/pages/Login";
 import { Dashboard } from "@/components/pages/Dashboard";
+import { useLiveSales } from "@/components/pages/LiveSales";
 import { Sales } from "@/components/pages/Sales";
 import { Scan } from "@/components/pages/Scan";
 import { Inventory } from "@/components/pages/Inventory";
@@ -67,20 +68,22 @@ export default function App({
   }, []);
   // Keep the numbers live: sales can arrive from the point of sale while a page is open.
   const edits = useRef(0); // bumped by act(), so a refresh that started before an edit never overwrites it
+  async function refresh() {
+    const started = edits.current;
+    try {
+      const r = await fetch("/api/data");
+      const data = r.ok ? await r.json() : null;
+      if (Array.isArray(data) && edits.current === started) setAll(data);
+    } catch {}
+  }
   useEffect(() => {
     if (page === "login") return;
     const timer = setInterval(() => {
-      if (document.hidden) return;
-      const started = edits.current;
-      fetch("/api/data")
-        .then((r) => (r.ok ? r.json() : null))
-        .then((data) => {
-          if (Array.isArray(data) && edits.current === started) setAll(data);
-        })
-        .catch(() => {});
+      if (!document.hidden) refresh();
     }, 5000);
     return () => clearInterval(timer);
   }, [page]);
+  const live = useLiveSales(page === "login" ? undefined : b, refresh);
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
     localStorage.setItem("munshi_theme", dark ? "dark" : "light");
@@ -171,7 +174,7 @@ export default function App({
         {sidebar && <MobileDrawer onClose={() => setSidebar(false)} />}
         <main className="main p-8 md:p-10 max-w-7xl mx-auto">
           {page === "dashboard" && (
-            <Dashboard b={b} m={m} leak={leak} act={act} />
+            <Dashboard b={b} m={m} leak={leak} act={act} live={live} />
           )}
           {page === "sales" && <Sales b={b} act={act} />}
           {page === "scan" && <Scan b={b} act={act} />}
