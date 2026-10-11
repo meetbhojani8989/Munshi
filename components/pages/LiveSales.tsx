@@ -81,9 +81,11 @@ export function useLiveSales(
 export function Flash({
   value,
   children,
+  block = false,
 }: {
   value: unknown;
   children: React.ReactNode;
+  block?: boolean; // wrap a whole card: highlights with a ring instead of a background
 }) {
   const [lit, setLit] = useState(false);
   const seen = useRef(value);
@@ -94,6 +96,21 @@ export function Flash({
     const timer = setTimeout(() => setLit(false), 1400);
     return () => clearTimeout(timer);
   }, [value]);
+  if (block)
+    return (
+      <div
+        data-flash={lit ? "on" : undefined}
+        className="h-full rounded-[18px]"
+        style={{
+          boxShadow: lit
+            ? "0 0 0 3px var(--accent, #be8a2a)"
+            : "0 0 0 0 transparent",
+          transition: lit ? "none" : "box-shadow 900ms ease-out",
+        }}
+      >
+        {children}
+      </div>
+    );
   return (
     <span
       data-flash={lit ? "on" : undefined}
@@ -116,7 +133,7 @@ export function LiveSalesPanel({ b, live }: { b: Business; live: Live }) {
     .slice(0, 6);
   const stock = new Map(b.items.map((i) => [i.id, i.stock]));
   return (
-    <Card className="mb-5">
+    <Card>
       <div className="flex justify-between items-center gap-3">
         <div>
           <h2 className="flex items-center gap-2">
