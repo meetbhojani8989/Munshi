@@ -76,6 +76,13 @@ export type InvoiceResult = { invoice: Invoice; changes: CascadeChange[] };
 /** POST /api/sales */
 export type SaleResult = { sale: Sale; changes: CascadeChange[] };
 
+/** POST /api/invoices/parse: what OCR read from an uploaded invoice, for the owner to review and send to POST /api/invoices. */
+export type InvoiceDraft = {
+  vendor: string; date: string; lines: LineItem[]; tax: Money; total: Money; // a line without itemId is a product not stocked yet
+  source: 'textract' | 'ocr' | 'sample'; // AWS Textract, on-device OCR, or the built-in sample (no file sent)
+  warnings: string[]; // plain-language notes to show above the form
+};
+
 /** GET /api/inventory, GET /api/items, GET /api/items/:id, PATCH /api/items/:id */
 export interface ItemDetail extends Item {
   stockValue: Money;  // stockQty x unitCost

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ZodError, z } from 'zod';
 import { auth } from '@/auth';
 import { LedgerService, NotFoundError } from './ledger';
+import { OcrError } from './ocr';
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Dates must be YYYY-MM-DD').optional();
 const count = (max: number) => z.coerce.number().int().min(0).max(max).optional();
@@ -40,6 +41,7 @@ export function api(handler: (c: Context) => Promise<unknown>, status = 200) {
         return NextResponse.json({ error: [issue.path.join('.'), issue.message].filter(Boolean).join(': ') }, { status: 400 });
       }
       if (e instanceof NotFoundError) return NextResponse.json({ error: e.message }, { status: 404 });
+      if (e instanceof OcrError) return NextResponse.json({ error: e.message }, { status: 400 });
       const rule = e instanceof Error && /^(Insufficient stock|Unbalanced entry|Invalid invoice line|Invoice |Item not found)/.test(e.message);
       if (!rule) console.error(e);
       return NextResponse.json({ error: rule ? (e as Error).message : 'Something went wrong' }, { status: rule ? 400 : 500 });

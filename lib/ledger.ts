@@ -116,6 +116,18 @@ function cascade(before: Business, after: Business, touched: string[]): CascadeC
   return changes;
 }
 
+/** The stock item with this name, or a new one (first time this product is bought) priced at a 60% margin for the owner to adjust. */
+export function findOrCreateItem(b: Business, name: string, unitCost: number): StoredItem {
+  const wanted = name.trim().toLowerCase();
+  if (!wanted) throw Error('Invoice line needs an item or a name');
+  let item = b.items.find(i => i.name.toLowerCase() === wanted);
+  if (!item) {
+    item = { id: `${b.id}-${crypto.randomUUID().slice(0, 8)}`, name: name.trim(), category: 'Uncategorized', price: cents(unitCost * 2.5) || 1, cost: unitCost, stock: 0, reorder: 0, units: 0 };
+    b.items.push(item);
+  }
+  return item;
+}
+
 export class LedgerService {
   // Shared across Next.js route bundles, so two routes cannot change one business at the same moment.
   private queues: Map<string, Promise<unknown>> = ((globalThis as { __munshiQueues?: Map<string, Promise<unknown>> }).__munshiQueues ??= new Map());
@@ -149,14 +161,8 @@ export class LedgerService {
     const { vendor, date, lines, tax } = invoiceInputSchema.parse(input);
     return this.change(businessId, (b, before) => {
       const rows = lines.map(l => {
-        let item = l.itemId ? b.items.find(i => i.id === l.itemId) : b.items.find(i => i.name.toLowerCase() === l.name.toLowerCase());
-        if (!item && l.itemId) throw new NotFoundError(`Item not found: ${l.itemId}`);
-        if (!item) {
-          if (!l.name) throw Error('Invoice line needs an itemId or a name');
-          // First time this product is bought: add it at a 60% margin for the owner to reprice.
-          item = { id: `${b.id}-${crypto.randomUUID().slice(0, 8)}`, name: l.name, category: 'Uncategorized', price: cents(l.unitPrice * 2.5) || 1, cost: l.unitPrice, stock: 0, reorder: 0, units: 0 };
-          b.items.push(item);
-        }
+        const item = l.itemId ? b.items.find(i => i.id === l.itemId) : findOrCreateItem(b, l.name, l.unitPrice);
+        if (!item) throw new NotFoundError(`Item not found: ${l.itemId}`);
         return { id: item.id, qty: l.qty, cost: l.unitPrice };
       });
       const invoice: StoredInvoice = receive(b, vendor, rows);

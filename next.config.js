@@ -1,1 +1,1 @@
-module.exports={output:'standalone'};
+module.exports={output:'standalone',serverExternalPackages:['tesseract.js']};
