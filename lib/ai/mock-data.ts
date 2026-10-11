@@ -2,7 +2,7 @@
 // Item ids mirror the seeded café (lib/core.ts seed: `${businessId}-${index}`,
 // so Chicken Wrap is cafe-0 and Tomato Soup is cafe-10) so an approved price
 // change can PATCH /api/items/:id against the real business.
-import type{AnalyticsContext}from'./types';
+import type{AnalyticsContext,Prediction,SuggestionCategory}from'./types';
 
 export const mockAnalyticsContext:AnalyticsContext={
   businessId:'cafe',
@@ -35,4 +35,29 @@ export function getAnalyticsContext():AnalyticsContext{
   // A function (not just the constant) so the route layer can later swap this
   // for a real fetch without changing its callers.
   return mockAnalyticsContext;
+}
+
+// Past predictions paired with what actually happened, oldest first. Early
+// calls miss and later ones land, so the scorecard trend climbs as Munshi learns.
+const history:[string,SuggestionCategory,number,number,number][]=[
+  // action, category, predicted, actual, confidence
+  ['Raise the iced latte by $0.75','pricing',120,70,0.6],
+  ['Stock extra muffins for the weekend','inventory',150,110,0.62],
+  ['Run a mid-week discount','promotions',200,120,0.55],
+  ['Extend evening hours on Thursdays','hours',180,230,0.6],
+  ['Bundle a cookie with every wrap','menu',160,165,0.66],
+  ['Add a seasonal soup special','menu',140,150,0.68],
+  ['Reorder cold brew before the heatwave','inventory',220,210,0.72],
+  ['Raise the cappuccino by $0.50','pricing',190,250,0.7],
+  ['Raise the chicken wrap by $1','pricing',300,290,0.82],
+  ['Trim the last open hour on Tuesdays','hours',120,118,0.68],
+  ['Raise the chicken wrap by $1 again','pricing',340,355,0.8],
+  ['Keep soup available until close','inventory',160,158,0.74],
+];
+
+export function getPredictionHistory():{prediction:Prediction;actual:number}[]{
+  return history.map(([action,category,predicted,actual,confidence],i)=>({
+    prediction:{id:`pred-${i+1}`,action,category,predicted,confidence},
+    actual,
+  }));
 }
