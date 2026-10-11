@@ -18,11 +18,22 @@ export function Books({ b, act }: { b: Business; act: any }) {
   const [tab, setTab] = useState("Journal"),
     [period, setPeriod] = useState("Month");
   const bal = balances(b),
-    m = metrics(b),
-    balanced = b.entries.every(
+    m = metrics(b);
+  // Everything below is computed from the journal. Accounts outside the balance sheet are P&L accounts.
+  const sheetAccounts = ["Cash", "Card Clearing", "Inventory", "Accounts Payable", "Owner Equity"];
+  const opex = Object.entries(bal)
+    .filter(([a]) => !sheetAccounts.includes(a) && a !== "Sales Revenue" && a !== "Cost of Goods Sold")
+    .reduce((s, [, v]) => s + v, 0);
+  const netIncome = m.profit - opex;
+  const assets = (bal.Cash || 0) + (bal["Card Clearing"] || 0) + (bal.Inventory || 0);
+  const liabilities = -(bal["Accounts Payable"] || 0);
+  const equity = -(bal["Owner Equity"] || 0) + netIncome;
+  // The badge needs every entry balanced AND Assets = Liabilities + Equity.
+  const balanced =
+    b.entries.every(
       (e) =>
         Math.abs(e.lines.reduce((s, l) => s + l.debit - l.credit, 0)) < 0.001,
-    );
+    ) && Math.abs(assets - liabilities - equity) < 0.01;
   const shown = b.entries.slice(0, 50);
   const debits = shown.reduce(
     (s, e) => s + e.lines.reduce((a, l) => a + l.debit, 0),
@@ -61,6 +72,8 @@ export function Books({ b, act }: { b: Business; act: any }) {
     ["Sales revenue", m.revenue],
     ["Cost of goods sold", -m.cogs],
     ["Gross profit", m.profit],
+    ["Operating expenses", -opex],
+    ["Net income", netIncome],
   ] as const;
   const plMax = Math.max(m.revenue, 1);
 
@@ -213,7 +226,7 @@ export function Books({ b, act }: { b: Business; act: any }) {
                         value={Math.abs(v)}
                         format={(k) => (v < 0 ? "−" : "") + usd(Math.round(k))}
                         className={
-                          n === 1 ? "negative" : n === 2 ? "positive" : ""
+                          v < 0 ? "negative" : n === 2 || n === 4 ? "positive" : ""
                         }
                       />
                     </div>
@@ -223,7 +236,7 @@ export function Books({ b, act }: { b: Business; act: any }) {
                           "h-full rounded-lg origin-left " +
                           (n === 0
                             ? "bg-[var(--brand)]"
-                            : n === 1
+                            : v < 0
                               ? "bg-[var(--neg)]"
                               : "bg-accent")
                         }
@@ -253,12 +266,12 @@ export function Books({ b, act }: { b: Business; act: any }) {
               <h2>Balance Sheet</h2>
               <div className="mt-4">
                 {[
-                  ["Cash", b.cash],
+                  ["Cash", bal.Cash || 0],
                   ["Card Clearing", bal["Card Clearing"] || 0],
                   ["Inventory", bal.Inventory || 0],
                   ["Accounts Payable", -(bal["Accounts Payable"] || 0)],
                   ["Owner Equity", -(bal["Owner Equity"] || 0)],
-                  ["Retained earnings", m.profit],
+                  ["Retained earnings", netIncome],
                 ].map(([x, v], i) => (
                   <motion.div
                     className="flex justify-between py-4 border-b border-line"

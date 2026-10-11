@@ -5,6 +5,7 @@ import{sell,receive,pay,type Business}from'@/lib/core';
 import{findOrCreateItem}from'@/lib/ledger';
 import{getStore}from'@/lib/store';
 import{refreshSuggestions}from'@/lib/ai/context';
+import{forClient}from'@/lib/client-view';
 
 export const dynamic='force-dynamic';
 export const maxDuration=60;
@@ -17,7 +18,7 @@ function postInvoice(b:Business,p:any){const vendor=z.string().trim().min(1,'Ent
 // Goes through getStore(): MongoDB when MONGODB_URI is set, otherwise the local file store.
 export async function GET(){
   if(!await auth())return NextResponse.json({error:'Sign in required'},{status:401});
-  return NextResponse.json(await getStore().list());
+  return NextResponse.json((await getStore().list()).map(forClient));
 }
 
 export async function POST(req:NextRequest){
@@ -25,10 +26,10 @@ export async function POST(req:NextRequest){
   try{
     const store=getStore();
     const{businessId,action,payload}=schema.parse(await req.json());
-    if(action==='reset')return NextResponse.json({businesses:await store.reset()});
+    if(action==='reset')return NextResponse.json({businesses:(await store.reset()).map(forClient)});
     const b=await store.get(businessId);
     if(!b)throw Error('Business not found');
-    let result:unknown=b;
+    let result:unknown; // only sale, invoice and insights actions return something; never echo the whole business
     const p=(payload??{})as any;
     if(action==='sale')result=sell(b,z.array(z.object({id:z.string(),qty:z.number().int().positive()})).parse(p.items),z.string().parse(p.payment),p.channel||'In store');
     else if(action==='invoice')result=postInvoice(b,p);
@@ -42,7 +43,7 @@ export async function POST(req:NextRequest){
     else if(action==='business'){b.name=z.string().min(1).parse(p.name)}
     else throw Error('Unknown action');
     await store.save(b);
-    return NextResponse.json({businesses:await store.list(),result});
+    return NextResponse.json({businesses:(await store.list()).map(forClient),result});
   }catch(e){
     return NextResponse.json({error:e instanceof ZodError?e.issues[0]?.message||'Invalid request':e instanceof Error?e.message:'Invalid request'},{status:400});
   }

@@ -61,6 +61,14 @@ export function seed():Business[]{
           if(paid){b.cash=cents(b.cash-total);journal(`jp-${inv}`,date,`Paid ${vendor}`,inv,[{account:'Accounts Payable',debit:total,credit:0},{account:'Cash',debit:0,credit:total}])}
         }
       }
+      // The card processor pays out yesterday's card sales each morning (Dr Cash, Cr Card Clearing).
+      const clearing=cents(b.entries.reduce((s,e)=>s+e.lines.filter(l=>l.account==='Card Clearing').reduce((a,l)=>a+l.debit-l.credit,0),0));
+      if(clearing>0){const fee=cents(clearing*.026);b.cash=cents(b.cash-fee);journal(`jc-${id}-${d}`,date,'Card processor payout','payout',[{account:'Cash',debit:cents(clearing-fee),credit:0},{account:'Card Processing Fees',debit:fee,credit:0},{account:'Card Clearing',debit:0,credit:clearing}])}
+      // Operating costs: payroll every Friday (about 27% of the week's sales), rent on the 1st, utilities on the 5th.
+      const expense=(key:string,memo:string,account:string,amount:number)=>{amount=cents(amount);if(amount<=0)return;b.cash=cents(b.cash-amount);journal(`je-${id}-${d}-${key}`,date,memo,'expense',[{account,debit:amount,credit:0},{account:'Cash',debit:0,credit:amount}])};
+      if(dow===5){const since=dayAgo(d+7);expense('pay','Weekly payroll','Wages & Salaries',.27*b.sales.filter(s=>s.date>since&&s.date<=date).reduce((a,s)=>a+s.total,0))}
+      if(date.endsWith('-01'))expense('rent','Rent: College Ave storefront','Rent',retail?2400:3800);
+      if(date.endsWith('-05'))expense('util','Electric, water and internet','Utilities',retail?310:690);
       // Demand: weekday rhythm, slow growth, and Penn State home-game Saturdays (every other week).
       const gameDay=dow===6&&Math.floor(d/7)%2===0;
       const dayFactor=weekdayWeight[dow]*(1+(89-d)*.002)*(gameDay?1.7:1)*(.88+rand()*.24);

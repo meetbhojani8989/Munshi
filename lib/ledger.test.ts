@@ -22,9 +22,11 @@ describe('LedgerService', () => {
     const count = (await cafe()).entries.length;
     await expect(ledger.postEntry('cafe', 'bad', [{ account: 'Cash', debit: 10, credit: 0 }])).rejects.toThrow('Unbalanced');
     expect((await cafe()).entries).toHaveLength(count);
+    const rent = async () => (await ledger.pnl('cafe')).expenses.find(e => e.account === 'Rent')?.amount ?? 0;
+    const rentBefore = await rent();
     const entry = await ledger.postEntry('cafe', 'Rent', [{ account: 'Rent', debit: 500, credit: 0 }, { account: 'Cash', debit: 0, credit: 500 }]);
     expect(entry.sourceType).toBe('adjustment');
-    expect((await ledger.pnl('cafe')).expenses).toEqual([{ account: 'Rent', amount: 500 }]);
+    expect(await rent()).toBeCloseTo(rentBefore + 500, 2);
     expect((await ledger.balanceSheet('cafe')).balanced).toBe(true);
   });
 
