@@ -1,6 +1,6 @@
 import mongoose, { Schema, model, models, type Model } from 'mongoose';
 import { seed } from './core';
-import type { Business, Entry, Invoice, Item, Sale } from './types';
+import type { Business, Entry, Invoice, Item, Sale } from './core';
 import type { BusinessStore } from './store';
 
 const opts = { timestamps: true };
@@ -21,8 +21,8 @@ const schemas = {
     suggestions: mixedList, orders: mixedList, experiments: mixedList, outcomes: mixedList,
   }, opts),
   Item: new Schema({ ...owned, name: String, category: String, price: Number, cost: Number, stock: Number, reorder: Number, units: Number, unit: String }, opts),
-  Invoice: new Schema({ ...owned, vendor: String, vendorId: Schema.Types.ObjectId, date: String, items: [line], imageUrl: String, total: Number, paid: Boolean }, opts),
-  Sale: new Schema({ ...owned, date: String, items: [line], total: Number, channel: String, payment: String }, opts),
+  Invoice: new Schema({ ...owned, vendor: String, vendorId: Schema.Types.ObjectId, date: String, items: [line], imageUrl: String, tax: Number, total: Number, paid: Boolean }, opts),
+  Sale: new Schema({ ...owned, date: String, time: String, items: [line], total: Number, channel: String, payment: String }, opts),
   JournalEntry: new Schema({ ...owned, date: String, source: String, memo: String, lines: [journalLine] }, opts),
   // Not used by the ledger yet.
   Vendor: new Schema({ businessId: objectRef, name: String, email: String, phone: String, items: [String] }, opts),

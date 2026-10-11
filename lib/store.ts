@@ -1,7 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { seed } from './core';
-import type { Business } from './types';
+import { seed, type Business } from './core';
 
 // ---- Local store: businesses held in memory and mirrored to a JSON file ----
 const file = process.env.MUNSHI_DATA_FILE || path.join(process.cwd(), 'data', 'businesses.json');
@@ -70,3 +69,14 @@ export function storeKind(): StoreKind {
   return process.env.MONGODB_URI ? 'mongo' : 'file';
 }
 export const getStore = (): BusinessStore => (storeKind() === 'mongo' ? mongoStore : fileStore);
+
+/** A store that lives only in memory, for tests. */
+export function memoryStore(businesses: Business[] = seed()): BusinessStore {
+  let all = businesses;
+  return {
+    async list() { return all; },
+    async get(id) { return all.find(b => b.id === id) ?? null; },
+    async save(business) { all = all.some(b => b.id === business.id) ? all.map(b => (b.id === business.id ? business : b)) : [...all, business]; },
+    async reset() { return all = seed(); },
+  };
+}

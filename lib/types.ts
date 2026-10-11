@@ -1,118 +1,121 @@
-// Shared types for the Munshi backend and frontend.
-// Domain shapes are what the stores persist; the zod schemas validate API input;
-// the report types are what the API routes return.
+// Shared contracts between backend, frontend and AI code (team plan, section 5).
+// Only Person A changes this file. Everything the /api routes accept or return is typed here.
+// (lib/core.ts keeps the storage shapes; lib/ledger.ts converts between the two.)
 import { z } from 'zod';
 
-// ---- Domain ----
-export type Line = { account: string; debit: number; credit: number };
-export type Entry = { id: string; date: string; memo: string; source: string; lines: Line[] };
-export type Item = { id: string; name: string; category: string; price: number; cost: number; stock: number; reorder: number; units: number };
-export type SaleLine = { id: string; name: string; qty: number; price: number; cost: number };
-export type Sale = { id: string; date: string; items: SaleLine[]; total: number; channel: string; payment: string };
-export type InvoiceLine = { id: string; name: string; qty: number; cost: number };
-export type Invoice = { id: string; date: string; vendor: string; items: InvoiceLine[]; total: number; paid: boolean };
-export type Suggestion = { id: string; action: string; reason: string; impact: number; confidence: number; category: string; itemId?: string; newPrice?: number; status?: string };
-export type Order = { id: string; channel: string; customer: string; itemId: string; qty: number; status: string };
-export type Experiment = { id: string; itemId: string; price: number; days: number; start: string; status: string };
-export type Outcome = { id: string; predicted: number; actual: number; lesson: string };
-export type Business = {
-  id: string; name: string; type: string; eventDay: boolean; cash: number;
-  items: Item[]; sales: Sale[]; invoices: Invoice[]; entries: Entry[];
-  suggestions: Suggestion[]; orders: Order[]; experiments: Experiment[]; outcomes: Outcome[];
-};
+export type Money = number; // dollars, 2 decimals
+
+export interface Item { _id: string; businessId: string; name: string; category: string;
+  price: Money; unitCost: Money; unit: string; stockQty: number; reorderPoint: number; }
+
+export interface LineItem { itemId?: string; name: string; qty: number; unitPrice: Money; }
+
+export interface Invoice { _id: string; businessId: string; vendor: string; date: string;
+  lines: LineItem[]; tax: Money; total: Money; status: 'unpaid' | 'paid'; imageUrl?: string; }
+
+export interface Sale { _id: string; businessId: string; timestamp: string; channel: 'counter' | 'online';
+  paymentMethod: 'cash' | 'card'; lines: LineItem[]; total: Money; }
+
+export interface JournalLine { account: string; debit: Money; credit: Money; }
+export interface JournalEntry { _id: string; businessId: string; date: string; memo: string;
+  sourceType: 'invoice' | 'sale' | 'payment' | 'adjustment'; sourceId: string; lines: JournalLine[]; }
+
+export interface CascadeChange { kind: 'inventory' | 'payable' | 'journal' | 'margin' | 'cash';
+  label: string; before?: number; after?: number; }
+
+export interface Suggestion { _id: string; businessId: string; category:
+  'pricing' | 'inventory' | 'hours' | 'menu' | 'promotion' | 'vendor';
+  action: string; reason: string; predictedMonthlyImpact: Money; confidence: 'low' | 'medium' | 'high';
+  status: 'open' | 'approved' | 'dismissed'; createdAt: string; checkAfter: string; }
+
+export interface Outcome { suggestionId: string; actualMonthlyImpact: Money;
+  verdict: 'right' | 'wrong' | 'partial'; lesson: string; }
 
 // ---- Chart of accounts ----
 export type AccountType = 'asset' | 'liability' | 'equity' | 'revenue' | 'expense';
 export const ACCOUNTS = {
-  cash: 'Cash',
-  cardClearing: 'Card Clearing',
-  inventory: 'Inventory',
-  payables: 'Accounts Payable',
-  equity: 'Owner Equity',
-  revenue: 'Sales Revenue',
-  cogs: 'Cost of Goods Sold',
-  shrinkage: 'Inventory Shrinkage',
+  cash: 'Cash', cardClearing: 'Card Clearing', inventory: 'Inventory', payables: 'Accounts Payable',
+  equity: 'Owner Equity', revenue: 'Sales Revenue', cogs: 'Cost of Goods Sold', purchaseTax: 'Purchase Tax',
 } as const;
 export const ACCOUNT_TYPES: Record<string, AccountType> = {
-  [ACCOUNTS.cash]: 'asset',
-  [ACCOUNTS.cardClearing]: 'asset',
-  [ACCOUNTS.inventory]: 'asset',
-  [ACCOUNTS.payables]: 'liability',
-  [ACCOUNTS.equity]: 'equity',
-  [ACCOUNTS.revenue]: 'revenue',
-  [ACCOUNTS.cogs]: 'expense',
-  [ACCOUNTS.shrinkage]: 'expense',
+  [ACCOUNTS.cash]: 'asset', [ACCOUNTS.cardClearing]: 'asset', [ACCOUNTS.inventory]: 'asset',
+  [ACCOUNTS.payables]: 'liability', [ACCOUNTS.equity]: 'equity', [ACCOUNTS.revenue]: 'revenue',
+  [ACCOUNTS.cogs]: 'expense', [ACCOUNTS.purchaseTax]: 'expense',
 };
-// Accounts posted by hand that are not in the chart are treated as expenses.
+// Accounts that are not in the chart are treated as expenses.
 export const accountType = (account: string): AccountType => ACCOUNT_TYPES[account] ?? 'expense';
 
-// ---- API input ----
+// ---- Request bodies (every route also takes an optional businessId; default is the demo café) ----
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD');
-export const saleInputSchema = z.object({
-  items: z.array(z.object({ id: z.string().min(1), qty: z.number().int().positive() })).min(1),
-  payment: z.string().min(1).default('Card'),
-  channel: z.string().min(1).default('In store'),
-});
+/** POST /api/invoices. A line without itemId is matched to an item by name, or creates a new item. */
 export const invoiceInputSchema = z.object({
   vendor: z.string().trim().min(1),
-  items: z.array(z.object({ id: z.string().min(1), qty: z.number().positive(), cost: z.number().nonnegative() })).min(1),
+  date: isoDate.optional(),
+  lines: z.array(z.object({ itemId: z.string().optional(), name: z.string().trim().default(''), qty: z.number().positive(), unitPrice: z.number().nonnegative() })).min(1),
+  tax: z.number().nonnegative().default(0),
+  imageUrl: z.string().optional(),
 });
-export const itemInputSchema = z.object({
-  name: z.string().trim().min(1),
-  category: z.string().trim().min(1).default('General'),
-  price: z.number().positive(),
-  cost: z.number().nonnegative(),
-  reorder: z.number().int().nonnegative().default(0),
+/** POST /api/sales. Price comes from the item, not the request. */
+export const saleInputSchema = z.object({
+  lines: z.array(z.object({ itemId: z.string().min(1), qty: z.number().int().positive() })).min(1),
+  paymentMethod: z.enum(['cash', 'card']).default('card'),
+  channel: z.enum(['counter', 'online']).default('counter'),
 });
-export const itemPatchSchema = itemInputSchema.pick({ name: true, category: true, price: true, reorder: true }).partial()
-  .refine(p => Object.keys(p).length > 0, 'Nothing to update');
-export const stockAdjustmentSchema = z.object({
-  delta: z.number().int().refine(n => n !== 0, 'Delta cannot be zero'),
-  reason: z.string().trim().min(1).default('Stock count'),
-});
-export const dateRangeSchema = z.object({ from: isoDate.optional(), to: isoDate.optional() });
-
-// z.input: callers may omit fields that have defaults.
-export type SaleInput = z.input<typeof saleInputSchema>;
+/** PATCH /api/items/:id */
+export const itemPatchSchema = z.object({
+  price: z.number().positive(), name: z.string().trim().min(1), category: z.string().trim().min(1), reorderPoint: z.number().int().nonnegative(),
+}).partial().refine(p => Object.keys(p).length > 0, 'Nothing to update');
 export type InvoiceInput = z.input<typeof invoiceInputSchema>;
-export type ItemInput = z.input<typeof itemInputSchema>;
+export type SaleInput = z.input<typeof saleInputSchema>;
 export type ItemPatch = z.input<typeof itemPatchSchema>;
-export type StockAdjustment = z.input<typeof stockAdjustmentSchema>;
-export type DateRange = z.infer<typeof dateRangeSchema>;
 
-// ---- API output ----
+// ---- Responses ----
 export type ApiError = { error: string };
-export type Page<T> = { total: number; rows: T[] };
+/** POST /api/invoices, POST /api/invoices/:id/pay */
+export type InvoiceResult = { invoice: Invoice; changes: CascadeChange[] };
+/** POST /api/sales */
+export type SaleResult = { sale: Sale; changes: CascadeChange[] };
 
-export type AccountBalance = {
-  account: string; type: AccountType; debit: number; credit: number;
-  balance: number; // in the account's normal direction: debit-positive for assets and expenses, credit-positive otherwise
+/** GET /api/inventory, GET /api/items, GET /api/items/:id, PATCH /api/items/:id */
+export interface ItemDetail extends Item {
+  stockValue: Money;  // stockQty x unitCost
+  margin: Money;      // price - unitCost
+  marginPct: number;  // 0..1
+  unitsSold: number;  // all time
+  status: 'out' | 'low' | 'ok';
+}
+export type InventoryResponse = { items: ItemDetail[]; totalValue: Money; totalUnits: number; lowStock: number; outOfStock: number };
+
+/** GET /api/books/pnl?from&to */
+export type ProfitAndLoss = {
+  from: string | null; to: string | null;
+  revenue: Money; cogs: Money; grossProfit: Money; grossMarginPct: number;
+  expenses: { account: string; amount: Money }[]; // operating expenses other than COGS
+  totalExpenses: Money; netIncome: Money;
 };
-export type ProfitAndLoss = { from: string | null; to: string | null; revenue: number; cogs: number; grossProfit: number; otherExpenses: number; netIncome: number; margin: number };
+/** GET /api/books/balance-sheet?asOf */
 export type BalanceSheet = {
-  asOf: string | null;
-  assets: { account: string; balance: number }[];
-  liabilities: { account: string; balance: number }[];
-  equity: { account: string; balance: number }[]; // includes a "Retained Earnings" row
-  totalAssets: number; totalLiabilities: number; totalEquity: number; balanced: boolean;
+  asOf: string;
+  assets: { account: string; balance: Money }[];
+  liabilities: { account: string; balance: Money }[];
+  equity: { account: string; balance: Money }[]; // includes "Retained Earnings"
+  totalAssets: Money; totalLiabilities: Money; totalEquity: Money;
+  balanced: boolean; // show "Books balanced" only when true
 };
-export type Books = { trialBalance: AccountBalance[]; totalDebit: number; totalCredit: number; balanced: boolean; profitAndLoss: ProfitAndLoss; balanceSheet: BalanceSheet; entries: Page<Entry> };
+/** GET /api/books/journal?from&to&limit&offset (newest first) */
+export type JournalResponse = { total: number; entries: JournalEntry[]; balanced: boolean };
 
-export type StockStatus = 'out' | 'low' | 'ok';
-export type InventoryRow = Item & { value: number; margin: number; status: StockStatus };
-export type Inventory = { items: InventoryRow[]; totalValue: number; totalUnits: number; low: number; out: number };
-
-export type Analytics = {
+/** GET /api/analytics/summary?days */
+export type AnalyticsSummary = {
   days: number; from: string; to: string;
-  summary: {
-    revenue: number; cogs: number; grossProfit: number; margin: number;
-    orders: number; units: number; averageTicket: number;
-    previousRevenue: number; revenueChange: number | null; // vs the preceding window; null when that window had no sales
-    cash: number; inventoryValue: number; payables: number; unpaidInvoices: number; lowStock: number;
+  kpis: {
+    revenue: Money; cogs: Money; grossProfit: Money; grossMarginPct: number;
+    orders: number; unitsSold: number; averageTicket: Money;
+    revenueChangePct: number | null; // vs the preceding window of the same length; null when that window had no sales
+    cash: Money; inventoryValue: Money; payables: Money; unpaidInvoices: number; lowStock: number;
   };
-  daily: { date: string; revenue: number; profit: number; orders: number }[];
-  topItems: { id: string; name: string; units: number; revenue: number; profit: number }[];
-  channels: { channel: string; revenue: number; orders: number }[];
-  payments: { payment: string; revenue: number; orders: number }[];
-  lowStock: { id: string; name: string; stock: number; reorder: number; daysOfCover: number | null }[];
+  daily: { date: string; revenue: Money; profit: Money; orders: number }[]; // one row per day, zero-filled
+  salesByHour: { weekday: number; hour: number; revenue: Money; orders: number }[]; // weekday 0 = Sunday; only non-empty cells
+  itemMargins: { itemId: string; name: string; price: Money; unitCost: Money; margin: Money; marginPct: number; unitsSold: number; revenue: Money; profit: Money }[]; // by profit, highest first
+  channels: { channel: Sale['channel']; revenue: Money; orders: number }[];
 };
