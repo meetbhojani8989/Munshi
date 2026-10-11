@@ -10,3 +10,4 @@ src-tauri/server
 
 # private registry tokens
 .npmrc
+.monetize/
