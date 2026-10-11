@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import type { Business } from "@/lib/core";
@@ -65,6 +65,22 @@ export default function App({
           })
           .finally(() => setReady(true));
   }, []);
+  // Keep the numbers live: sales can arrive from the point of sale while a page is open.
+  const edits = useRef(0); // bumped by act(), so a refresh that started before an edit never overwrites it
+  useEffect(() => {
+    if (page === "login") return;
+    const timer = setInterval(() => {
+      if (document.hidden) return;
+      const started = edits.current;
+      fetch("/api/data")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (Array.isArray(data) && edits.current === started) setAll(data);
+        })
+        .catch(() => {});
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [page]);
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
     localStorage.setItem("munshi_theme", dark ? "dark" : "light");
@@ -72,6 +88,7 @@ export default function App({
   // Resolves to true when the server accepted the action.
   async function act(action: string, payload: unknown = {}, message = "") {
     if (!b) return false;
+    edits.current++;
     const r = await fetch("/api/data", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -82,6 +99,7 @@ export default function App({
       alert(j.error);
       return false;
     }
+    edits.current++;
     setAll(j.businesses);
     if (message) {
       setCascade(message);
