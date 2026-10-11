@@ -1,5 +1,6 @@
 'use client';
 import{useState}from'react';
+import{Mic}from'lucide-react';
 import type{AssistantReply,AssistantProposal}from'@/lib/ai/types';
 import{Card,Title,usd}from'./ui';
 
@@ -12,6 +13,25 @@ export default function AssistantView(){
   ]);
   const[proposal,setProposal]=useState<AssistantProposal|null>(null);
   const[sending,setSending]=useState(false);
+  const[listening,setListening]=useState(false);
+
+  // Web Speech API dictation. Fills the input so the owner can review the
+  // transcript before sending; degrades to typing when unsupported.
+  function startVoice(){
+    const SR=(window as any).SpeechRecognition||(window as any).webkitSpeechRecognition;
+    if(!SR){
+      setMessages(m=>[...m,{role:'assistant',text:'Voice input isn’t available in this browser — type your command instead.'}]);
+      return;
+    }
+    const recognition=new SR();
+    recognition.lang='en-US';
+    recognition.interimResults=false;
+    recognition.onresult=(e:any)=>setInput(e.results[0][0].transcript);
+    recognition.onend=()=>setListening(false);
+    recognition.onerror=()=>setListening(false);
+    setListening(true);
+    recognition.start();
+  }
 
   async function send(){
     const message=input.trim();
@@ -59,8 +79,10 @@ export default function AssistantView(){
       </div>}
       <div className="flex gap-2 mt-4">
         <input className="flex-1 min-w-0" placeholder="What was my best item?" value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&send()}/>
+        <button className="btn2 px-3" aria-label="Speak your question" onClick={startVoice} disabled={listening}><Mic size={16} className={listening?'positive':''}/></button>
         <button className="btn" onClick={send} disabled={sending}>{sending?'…':'Send'}</button>
       </div>
+      {listening&&<p className="text-xs muted mt-2">Listening… speak your question.</p>}
     </Card>
   </>;
 }
