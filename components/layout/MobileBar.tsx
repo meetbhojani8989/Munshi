@@ -1,26 +1,38 @@
 import Link from "next/link";
-import { nav } from "@/components/layout/nav";
+import { motion } from "framer-motion";
+import { workspaces, workspaceOf } from "@/components/layout/nav";
 
 export function MobileBar({ page }: { page: string }) {
+  const current = workspaceOf(page)?.key;
   return (
-    <nav className="mobilebar fixed bottom-0 left-0 right-0 bg-surface border-t border-line z-20 justify-around px-2 py-2">
-      {nav
-        .filter((n) =>
-          ["dashboard", "sales", "scan", "insights", "books"].includes(n[0]),
-        )
-        .map(([path, label, Icon]) => (
+    <nav className="mobilebar fixed bottom-3 left-3 right-3 z-30 justify-around rounded-2xl rail px-1 py-1.5 shadow-[var(--shadow-lg)]">
+      {workspaces.map((w) => {
+        const active = current === w.key;
+        const Icon = w.icon;
+        return (
           <Link
-            key={path}
-            href={"/" + path}
+            key={w.key}
+            href={"/" + w.pages[0]}
             className={
-              "flex flex-col items-center text-[10px] gap-1 " +
-              (page === path ? "positive" : "muted")
+              "relative flex flex-col items-center text-[10px] font-semibold gap-1 px-2 py-1.5 rounded-xl min-w-14 " +
+              (active ? "text-[#1c120c]" : "text-[#e7cdb8]")
             }
           >
-            <Icon size={21} />
-            {label}
+            {active && (
+              <motion.span
+                layoutId="mobile-active"
+                className="absolute inset-0 rounded-xl bg-white"
+                transition={{ type: "spring", stiffness: 500, damping: 38 }}
+              />
+            )}
+            <Icon
+              size={18}
+              className={"relative " + (active ? "text-[#c2410c]" : "")}
+            />
+            <span className="relative">{w.label}</span>
           </Link>
-        ))}
+        );
+      })}
     </nav>
   );
 }

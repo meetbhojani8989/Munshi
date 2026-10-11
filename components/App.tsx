@@ -1,16 +1,8 @@
 "use client";
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
-import type { Business } from "@/lib/core";
+import { motion } from "framer-motion";
 import { metrics } from "@/lib/core";
-import { nav } from "@/components/layout/nav";
-import { Sidebar } from "@/components/layout/Sidebar";
-import { TopBar } from "@/components/layout/TopBar";
-import { MobileDrawer } from "@/components/layout/MobileDrawer";
-import { MobileBar } from "@/components/layout/MobileBar";
-import { CascadeToast } from "@/components/layout/CascadeToast";
-import { VoiceButton, VoiceModal } from "@/components/layout/Voice";
+import { useMunshi } from "@/components/MunshiProvider";
 import { Login } from "@/components/pages/Login";
 import { Dashboard } from "@/components/pages/Dashboard";
 import { Sales } from "@/components/pages/Sales";
@@ -29,6 +21,8 @@ import { Valuation } from "@/components/pages/Valuation";
 import { SettingsPage } from "@/components/pages/Settings";
 import { Onboarding } from "@/components/pages/Onboarding";
 
+// Page content only. Shell (sidebar, top bar, overlays) and data live in the
+// root layout via MunshiProvider, so they persist across navigation.
 export default function App({
   page,
   itemId,
@@ -37,77 +31,9 @@ export default function App({
   itemId?: string;
 }) {
   const router = useRouter();
-  const [all, setAll] = useState<Business[]>([]),
-    [bid, setBid] = useState("cafe"),
-    [ready, setReady] = useState(false),
-    [demo, setDemo] = useState(false),
-    [dark, setDark] = useState(false),
-    [sidebar, setSidebar] = useState(false),
-    [voice, setVoice] = useState(false),
-    [voiceText, setVoiceText] = useState(""),
-    [cascade, setCascade] = useState("");
-  const b = all.find((x) => x.id === bid) || all[0];
-  useEffect(() => {
-    setDemo(localStorage.getItem("munshi_demo") === "1");
-    setDark(localStorage.getItem("munshi_theme") === "dark");
-    setBid(localStorage.getItem("munshi_business") || "cafe");
-    page === "login"
-      ? setReady(true)
-      : fetch("/api/data")
-          .then((r) => r.json())
-          .then((data) => {
-            if (Array.isArray(data)) setAll(data);
-            else throw new Error(data.error || "Unable to load business data");
-          })
-          .catch((error) => {
-            console.error(error);
-            router.replace("/login");
-          })
-          .finally(() => setReady(true));
-  }, []);
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", dark);
-    localStorage.setItem("munshi_theme", dark ? "dark" : "light");
-  }, [dark]);
-  async function act(action: string, payload: unknown = {}, message = "") {
-    if (!b) return;
-    const r = await fetch("/api/data", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ businessId: b.id, action, payload }),
-    });
-    const j = await r.json();
-    if (!r.ok) {
-      alert(j.error);
-      return;
-    }
-    setAll(j.businesses);
-    if (message) {
-      setCascade(message);
-      setTimeout(() => setCascade(""), 4500);
-    }
-  }
-  async function login(provider = "credentials") {
-    const selected =
-      process.env.NEXT_PUBLIC_OAUTH_ENABLED === "true"
-        ? provider
-        : "credentials";
-    const result = await signIn(selected, { redirect: false, demo: "yes" });
-    if (result?.error) {
-      alert("Sign-in failed. Please try again.");
-      return;
-    }
-    localStorage.setItem("munshi_demo", "1");
-    setDemo(true);
-    router.push("/dashboard");
-  }
+  const { b, ready, act, login, dark, setDark } = useMunshi();
   if (page === "login") return <Login login={login} />;
-  if (!ready || !b)
-    return (
-      <div className="min-h-screen flex items-center justify-center muted">
-        Loading Munshi…
-      </div>
-    );
+  if (!ready || !b) return <Loading />;
   const m = metrics(b);
   const dSales = Array.from({ length: 14 }, (_, i) => {
     const date = new Date(Date.now() - (13 - i) * 86400000)
@@ -129,77 +55,62 @@ export default function App({
       ),
     };
   });
-  const chartColors = ["#1e805f", "#d0a44a", "#7195a4", "#c87868", "#8e7db7"];
+  const chartColors = dark
+    ? ["#fb923c", "#facc15", "#fdba74", "#9a3412", "#fed7aa"]
+    : ["#c2410c", "#ea580c", "#ca8a04", "#7c2d12", "#fdba74"];
   const leak = 240 + (b.eventDay ? 125 : 0);
-  const pageTitle = nav.find((n) => n[0] === page)?.[1] || "Item";
   return (
-    <div className="min-h-screen">
-      <Sidebar page={page} />
-      <div className="md:ml-60">
-        <TopBar
-          title={pageTitle}
+    <>
+      {page === "dashboard" && (
+        <Dashboard b={b} m={m} leak={leak} act={act} data={dSales} />
+      )}
+      {page === "sales" && <Sales b={b} act={act} />}
+      {page === "scan" && <Scan b={b} act={act} />}
+      {page === "inventory" && <Inventory b={b} m={m} event={b.eventDay} />}
+      {page === "books" && <Books b={b} act={act} />}
+      {page === "analytics" && (
+        <Analytics b={b} data={dSales} colors={chartColors} />
+      )}
+      {page === "item" && (
+        <ItemPage
           b={b}
-          all={all}
-          dark={dark}
-          onMenu={() => setSidebar(!sidebar)}
-          onBusiness={(id) => {
-            setBid(id);
-            localStorage.setItem("munshi_business", id);
-          }}
-          onToggleTheme={() => setDark(!dark)}
-        />
-        {sidebar && <MobileDrawer onClose={() => setSidebar(false)} />}
-        <main className="main p-8 md:p-10 max-w-7xl mx-auto">
-          {page === "dashboard" && (
-            <Dashboard b={b} m={m} leak={leak} act={act} />
-          )}
-          {page === "sales" && <Sales b={b} act={act} />}
-          {page === "scan" && <Scan b={b} act={act} />}
-          {page === "inventory" && <Inventory b={b} m={m} event={b.eventDay} />}
-          {page === "books" && <Books b={b} act={act} />}
-          {page === "analytics" && (
-            <Analytics b={b} data={dSales} colors={chartColors} />
-          )}
-          {page === "item" && (
-            <ItemPage
-              b={b}
-              item={b.items.find((x) => x.id === itemId) || b.items[0]}
-              act={act}
-            />
-          )}
-          {page === "insights" && <Insights b={b} act={act} leak={leak} />}
-          {page === "lab" && <Lab b={b} act={act} />}
-          {page === "scorecard" && <Scorecard b={b} />}
-          {page === "orders" && <Orders b={b} act={act} />}
-          {page === "vendors" && <Vendors b={b} act={act} />}
-          {page === "assistant" && <Assistant b={b} act={act} />}
-          {page === "valuation" && <Valuation b={b} m={m} />}
-          {page === "settings" && (
-            <SettingsPage b={b} act={act} dark={dark} setDark={setDark} />
-          )}
-          {page === "onboarding" && (
-            <Onboarding
-              b={b}
-              act={act}
-              done={() => router.push("/dashboard")}
-            />
-          )}
-        </main>
-      </div>
-      <MobileBar page={page} />
-      <VoiceButton onClick={() => setVoice(true)} />
-      <CascadeToast message={cascade} />
-      {voice && (
-        <VoiceModal
-          text={voiceText}
-          setText={setVoiceText}
-          onClose={() => setVoice(false)}
-          onSubmit={() => {
-            setVoice(false);
-            router.push("/assistant?voice=" + encodeURIComponent(voiceText));
-          }}
+          item={b.items.find((x) => x.id === itemId) || b.items[0]}
+          act={act}
         />
       )}
+      {page === "insights" && <Insights b={b} act={act} leak={leak} />}
+      {page === "lab" && <Lab b={b} act={act} />}
+      {page === "scorecard" && <Scorecard b={b} />}
+      {page === "orders" && <Orders b={b} act={act} />}
+      {page === "vendors" && <Vendors b={b} act={act} />}
+      {page === "assistant" && <Assistant b={b} act={act} />}
+      {page === "valuation" && <Valuation b={b} m={m} />}
+      {page === "settings" && (
+        <SettingsPage b={b} act={act} dark={dark} setDark={setDark} />
+      )}
+      {page === "onboarding" && (
+        <Onboarding b={b} act={act} done={() => router.push("/dashboard")} />
+      )}
+    </>
+  );
+}
+
+// Skeleton that mirrors the page grid while data loads.
+function Loading() {
+  return (
+    <div aria-busy aria-label="Loading Munshi">
+      <div className="h-3 w-28 rounded bg-surface-2 mb-5" />
+      <div className="h-12 w-[min(520px,90%)] rounded-lg bg-surface-2 mb-10" />
+      <div className="gridstats">
+        {[0, 1, 2, 3].map((i) => (
+          <motion.div
+            key={i}
+            className="h-32 rounded-[18px] bg-surface-2"
+            animate={{ opacity: [0.5, 1, 0.5] }}
+            transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.12 }}
+          />
+        ))}
+      </div>
     </div>
   );
 }
