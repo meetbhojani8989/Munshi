@@ -69,8 +69,9 @@ export default function App({
     document.documentElement.classList.toggle("dark", dark);
     localStorage.setItem("munshi_theme", dark ? "dark" : "light");
   }, [dark]);
+  // Resolves to true when the server accepted the action.
   async function act(action: string, payload: unknown = {}, message = "") {
-    if (!b) return;
+    if (!b) return false;
     const r = await fetch("/api/data", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -79,13 +80,14 @@ export default function App({
     const j = await r.json();
     if (!r.ok) {
       alert(j.error);
-      return;
+      return false;
     }
     setAll(j.businesses);
     if (message) {
       setCascade(message);
       setTimeout(() => setCascade(""), 4500);
     }
+    return true;
   }
   async function login(provider = "credentials") {
     const selected =

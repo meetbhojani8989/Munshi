@@ -1,16 +1,59 @@
 import { useState } from "react";
 import { Camera } from "lucide-react";
 import type { Business } from "@/lib/core";
+import type { InvoiceDraft } from "@/lib/types";
 import { Title, Card, usd } from "@/components/layout/ui";
 
 export function Scan({ b, act }: { b: Business; act: any }) {
   const [file, setFile] = useState(""),
     [vendor, setVendor] = useState("Keystone Produce"),
     [date, setDate] = useState(new Date().toISOString().slice(0, 10)),
-    [rows, setRows] = useState([
-      { id: b.items[0].id, qty: 12, cost: b.items[0].cost },
-    ]),
-    [step, setStep] = useState(0);
+    [rows, setRows] = useState<
+      { id: string; name?: string; qty: number; cost: number }[]
+    >([{ id: b.items[0].id, qty: 12, cost: b.items[0].cost }]),
+    [step, setStep] = useState(0),
+    [reading, setReading] = useState(false),
+    [draft, setDraft] = useState<InvoiceDraft | null>(null),
+    [problem, setProblem] = useState("");
+  // Sends the file to the server to be read, then fills the form with what it found.
+  // With no file the server returns the sample invoice.
+  async function read(f?: File) {
+    setFile(f ? f.name : "sample-invoice.jpg");
+    setReading(true);
+    setProblem("");
+    setDraft(null);
+    setStep(0);
+    try {
+      const body = new FormData();
+      if (f) body.append("file", f);
+      const r = await fetch(
+        `/api/invoices/parse?businessId=${encodeURIComponent(b.id)}`,
+        f ? { method: "POST", body } : { method: "POST" },
+      );
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || "The invoice could not be read.");
+      const found = j as InvoiceDraft;
+      setDraft(found);
+      setVendor(found.vendor);
+      setDate(found.date);
+      // A line with no itemId is a product that is not stocked yet; it is added on confirm.
+      setRows(
+        found.lines.map((l) => ({
+          id: l.itemId || "",
+          name: l.itemId ? undefined : l.name,
+          qty: l.qty,
+          cost: l.unitPrice,
+        })),
+      );
+      setStep(1);
+    } catch (e) {
+      setProblem(
+        e instanceof Error ? e.message : "The invoice could not be read.",
+      );
+    } finally {
+      setReading(false);
+    }
+  }
   return (
     <>
       <Title
@@ -34,31 +77,40 @@ export function Scan({ b, act }: { b: Business; act: any }) {
               capture="environment"
               onChange={(e) => {
                 const f = e.target.files?.[0];
-                if (f) {
-                  setFile(f.name);
-                  setStep(1);
-                }
+                e.target.value = ""; // so choosing the same file again reads it again
+                if (f) read(f);
               }}
             />
           </label>
           <button
             className="btn2 mt-4"
-            onClick={() => {
-              setFile("sample-invoice.jpg");
-              setStep(1);
-            }}
+            disabled={reading}
+            onClick={() => read()}
           >
             Use sample invoice
           </button>
-          {file && (
+          {reading && (
+            <p className="text-sm muted mt-3">Reading {file}…</p>
+          )}
+          {problem && <p className="text-sm negative mt-3">{problem}</p>}
+          {draft && !reading && (
             <p className="text-sm positive mt-3">{file} ready for review</p>
           )}
         </Card>
         <Card>
           <h2>Review parsed fields</h2>
           <p className="text-sm muted mt-1 mb-4">
-            Mock OCR found these details. Edit any field before posting.
+            {!draft
+              ? "Upload an invoice to fill these in, or enter them by hand."
+              : draft.source === "sample"
+                ? "Sample invoice loaded. Edit any field before posting."
+                : `Read from ${file}${draft.source === "textract" ? " with AWS Textract" : ""}. Check each field before posting.`}
           </p>
+          {draft?.warnings.map((w) => (
+            <p className="text-sm negative mb-3" key={w}>
+              {w}
+            </p>
+          ))}
           <div className="grid grid-cols-2 gap-3">
             <label className="text-sm">
               Vendor
@@ -90,6 +142,9 @@ export function Scan({ b, act }: { b: Business; act: any }) {
                   )
                 }
               >
+                {r.name && (
+                  <option value="">New item: {r.name}</option>
+                )}
                 {b.items.map((i) => (
                   <option value={i.id} key={i.id}>
                     {i.name}
@@ -140,15 +195,22 @@ export function Scan({ b, act }: { b: Business; act: any }) {
             <b>Total</b>
             <b>{usd(rows.reduce((s, x) => s + x.qty * x.cost, 0))}</b>
           </div>
+          {draft && draft.tax > 0 && (
+            <p className="text-xs muted mt-2">
+              The invoice shows {usd(draft.total)} including {usd(draft.tax)}{" "}
+              tax. Tax is not posted to inventory.
+            </p>
+          )}
           <button
             className="btn w-full mt-4"
+            disabled={reading || !rows.length}
             onClick={async () => {
-              await act(
+              const posted = await act(
                 "invoice",
-                { vendor, items: rows },
+                { vendor, date, items: rows },
                 `Invoice posted from ${vendor}. Inventory and payables increased by ${usd(rows.reduce((s, x) => s + x.qty * x.cost, 0))}.`,
               );
-              setStep(2);
+              if (posted) setStep(2);
             }}
           >
             Confirm invoice
