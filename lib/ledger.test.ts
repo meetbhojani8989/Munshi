@@ -129,7 +129,7 @@ describe('LedgerService', () => {
     expect(a.daily).toHaveLength(30);
     expect(a.daily.reduce((s, d) => s + d.revenue, 0)).toBeCloseTo(a.kpis.revenue, 2);
     expect(a.salesByHour.reduce((s, c) => s + c.orders, 0)).toBe(a.kpis.orders);
-    expect(a.salesByHour.every(c => c.hour >= 7 && c.hour <= 18)).toBe(true);
+    expect(a.salesByHour.every(c => c.weekday >= 0 && c.weekday <= 6 && c.hour >= 0 && c.hour <= 23)).toBe(true);
     expect(a.itemMargins).toHaveLength(25);
     expect(a.channels.map(c => c.channel).sort()).toEqual(['counter', 'online']);
     expect((await ledger.business()).id).toBe('cafe');

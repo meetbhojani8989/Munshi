@@ -43,7 +43,7 @@ export function seed():Business[]{
         if(!qty)continue; // sold out
         const total=cents(i.price*qty),cogs=cents(i.cost*qty),sale=`s-${id}-${d}-${k}`;
         i.stock-=qty;i.units+=qty;b.cash=cents(b.cash+total);
-        const time=new Date(`${date}T${String(hours[(d*3+k*5)%hours.length]).padStart(2,'0')}:${String((d*13+k*17)%60).padStart(2,'0')}:00-04:00`).toISOString();
+        const at=new Date(`${date}T${String(hours[(d*3+k*5)%hours.length]).padStart(2,'0')}:${String((d*13+k*17)%60).padStart(2,'0')}:00-04:00`).getTime(),time=new Date(Math.min(at,now-(num-k)*240000)).toISOString(); // never in the future
         b.sales.unshift({id:sale,date,time,items:[{id:i.id,name:i.name,qty,price:i.price,cost:i.cost}],total,channel:k%5===0?'DoorDash':'In store',payment:'Card'});
         journal(`j-${id}-${d}-${k}`,date,`Sale of ${i.name}`,sale,[{account:'Card Clearing',debit:total,credit:0},{account:'Sales Revenue',debit:0,credit:total},{account:'Cost of Goods Sold',debit:cogs,credit:0},{account:'Inventory',debit:0,credit:cogs}]);
       }
